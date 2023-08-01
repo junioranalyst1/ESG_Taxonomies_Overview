@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Filter features within map view</title>
+<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+<style>
+body { margin: 0; padding: 0; }
+#map { position: absolute; top: 0; bottom: 0; width: 100%; }
+</style>
+</head>
+<body>
+<style>
+    #map {
+        position: absolute;
+        left: 25%;
+        top: 0;
+        bottom: 0;
+        width: 75%;
+    }
+    .map-overlay {
+        position: absolute;
+        width: 25%;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+        background-color: #efefef;
+        max-height: 100%;
+        overflow: hidden;
+    }
+
+    .map-overlay fieldset {
+        display: none;
+        background: #ddd;
+        border: none;
+        padding: 10px;
+        margin: 0;
+    }
+
+    .map-overlay input {
+        display: block;
+        border: none;
+        width: 100%;
+        border-radius: 3px;
+        padding: 10px;
+        margin: 0;
+        box-sizing: border-box;
+    }
+
+    .map-overlay .listing {
+        overflow: auto;
+        max-height: 100%;
+    }
+
+    .map-overlay .listing > * {
+        display: block;
+        padding: 5px 10px;
+        margin: 0;
+    }
+
+    .map-overlay .listing a {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        color: #404;
+        text-decoration: none;
+    }
+
+    .map-overlay .listing a:last-child {
+        border: none;
+    }
+
+    .map-overlay .listing a:hover {
+        background: #f0f0f0;
+    }
+</style>
+
+<div id="map"></div>
+
+<div class="map-overlay">
+    <fieldset>
+        <input id="feature-filter" type="text" placeholder="Filter results by name">
+    </fieldset>
+    <div id="feature-listing" class="listing"></div>
+</div>
+
+<script>
+    mapboxgl.accessToken = 'pk.eyJ1IjoianVuaW9yYW5hbHlzdDEiLCJhIjoiY2xranA1eHV5MHlpczNja2dieDlkZzJiciJ9.CN5Qa40PM2IMpwlyBAFTVA';
+    const map = new mapboxgl.Map({
+        container: 'map',
+        // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: [-98, 38.88],
+        maxZoom: 5,
+        minZoom: 1,
+        zoom: 3
+    });
+
+    let greenCountries = [
+    { name: 'Implemented', coordinates: [-74.2973, 4.5709] },
+          { name: 'Implemented', coordinates: [103.8467, 46.8625] },
+          { name: 'Implemented', coordinates: [116.4074, 39.9042] },
+          { name: 'Implemented', coordinates: [138.2529, 36.2048] },
+          { name: 'Implemented', coordinates: [101.9758, 4.2105] },
+          { name: 'Implemented', coordinates: [14.5501, 47.5162] },
+          { name: 'Implemented', coordinates: [4.4699, 50.5039] },
+          { name: 'Implemented', coordinates: [25.4858, 42.7339] },
+          { name: 'Implemented', coordinates: [15.2000, 45.1000] },
+          { name: 'Implemented', coordinates: [33.4299, 35.1264] },
+          { name: 'Implemented', coordinates: [15.4730, 49.8175] },
+          { name: 'Implemented', coordinates: [9.5018, 56.2639] },
+          { name: 'Implemented', coordinates: [24.7536, 58.5953] },
+          { name: 'Implemented', coordinates: [25.7482, 61.9241] },
+          { name: 'Implemented', coordinates: [2.2137, 46.6034] },
+          { name: 'Implemented', coordinates: [10.4515, 51.1657] },
+          { name: 'Implemented', coordinates: [21.8243, 39.0742] },
+          { name: 'Implemented', coordinates: [19.0402, 47.4979] },
+          { name: 'Implemented', coordinates: [-6.2603, 53.3498] },
+          { name: 'Implemented', coordinates: [12.5674, 41.8719] },
+          { name: 'Implemented', coordinates: [24.6032, 56.8796] },
+          { name: 'Implemented', coordinates: [23.8813, 55.1694] },
+          { name: 'Implemented', coordinates: [6.1296, 49.8153] },
+          { name: 'Implemented', coordinates: [14.3754, 35.9375] },
+          { name: 'Implemented', coordinates: [4.8979, 52.3779] },
+          { name: 'Implemented', coordinates: [19.1451, 51.9194] },
+          { name: 'Implemented', coordinates: [-9.1393, 38.7223] },
+          { name: 'Implemented', coordinates: [24.9668, 45.9432] },
+          { name: 'Implemented', coordinates: [19.6990, 48.6690] },
+          { name: 'Implemented', coordinates: [14.9955, 46.1512] },
+          { name: 'Implemented', coordinates: [-3.7492, 40.4637] },
+          { name: 'Implemented', coordinates: [18.6435, 60.1282] }
+        // ... add other greenCountries coordinates ...
+    ];
+
+    let yellowCountries = [
+    { name: 'In Development', coordinates: [-106.3468, 56.1304] },
+          { name: 'In Development', coordinates: [-102.5528, 23.6345] },
+          { name: 'In Development', coordinates: [-70.1627, 18.7357] },
+          { name: 'In Development', coordinates: [-75.0152, -9.1900] },
+          { name: 'In Development', coordinates: [-47.8825, -15.7942] },
+          { name: 'In Development', coordinates: [-71.5429, -35.6751] },
+          { name: 'In Development', coordinates: [-3.4359, 55.3781] },
+          { name: 'In Development', coordinates: [24.7495, -30.5595] },
+          { name: 'In Development', coordinates: [78.9629, 20.5937] },
+          { name: 'In Development', coordinates: [90.3563, 23.6850] },
+          { name: 'In Development', coordinates: [80.7718, 7.8731] },
+          { name: 'In Development', coordinates: [174.8859, -40.9006] },
+          { name: 'In Development', coordinates: [105.3188, 61.5240] },
+          { name: 'In Development', coordinates: [66.9237, 48.0196] },
+          { name: 'In Development', coordinates: [100.9925, 15.8700] },
+          { name: 'In Development', coordinates: [127.7669, 35.9078] },
+          { name: 'In Development', coordinates: [108.2772, 14.0583] },
+          { name: 'In Development', coordinates: [121.7740, 12.8797] },
+          { name: 'In Development', coordinates: [103.8198, 1.3521] },
+          { name: 'In Development', coordinates: [113.9213, -0.7893] }
+        // ... add other yellowCountries coordinates ...
+    ];
+
+    // Holds visible country features for filtering
+    let countries = [];
+
+    // Create a popup, but don't add it to the map yet.
+    const popup = new mapboxgl.Popup({
+        closeButton: false
+    });
+
+    const filterEl = document.getElementById('feature-filter');
+    const listingEl = document.getElementById('feature-listing');
+
+    function renderListings(features) {
+        const empty = document.createElement('p');
+        // Clear any existing listings
+        listingEl.innerHTML = '';
+        if (features.length) {
+            for (const feature of features) {
+                const itemLink = document.createElement('a');
+                const label = feature.properties.name;
+                itemLink.href = '#';
+                itemLink.textContent = label;
+                itemLink.addEventListener('mouseover', () => {
+                    // Highlight corresponding feature on the map
+                    popup
+                        .setLngLat(feature.geometry.coordinates)
+                        .setText(label)
+                        .addTo(map);
+                });
+                listingEl.appendChild(itemLink);
+            }
+
+            // Show the filter input
+            filterEl.parentNode.style.display = 'block';
+        } else if (features.length === 0 && filterEl.value !== '') {
+            empty.textContent = 'No results found';
+            listingEl.appendChild(empty);
+        } else {
+            empty.textContent = 'Drag the map to populate results';
+            listingEl.appendChild(empty);
+
+            // Hide the filter input
+            filterEl.parentNode.style.display = 'none';
+
+            // remove features filter
+            map.setFilter('country', ['has', 'name']);
+        }
+    }
+
+    function normalize(string) {
+        return string.trim().toLowerCase();
+    }
+
+    // Because features come from tiled vector data,
+    // feature geometries may be split
+    // or duplicated across tile boundaries.
+    // As a result, features may appear
+    // multiple times in query results.
+    function getUniqueFeatures(features, comparatorProperty) {
+        const uniqueIds = new Set();
+        const uniqueFeatures = [];
+        for (const feature of features) {
+            const id = feature.properties[comparatorProperty];
+            if (!uniqueIds.has(id)) {
+                uniqueIds.add(id);
+                uniqueFeatures.push(feature);
+            }
+        }
+        return uniqueFeatures;
+    }
+
+    map.on('load', () => {
+        // Add greenCountries and yellowCountries to the map
+        map.addSource('greenCountries', {
+            'type': 'geojson',
+            'data': {
+                'type': 'FeatureCollection',
+                'features': greenCountries.map(c => ({
+                    'type': 'Feature',
+                    'geometry': {
+                        'type': 'Point',
+                        'coordinates': c.coordinates
+                    },
+                    'properties': {
+                        'name': c.name
+                    }
+                }))
+            }
+        });
+        map.addSource('yellowCountries', {
+            'type': 'geojson',
+            'data': {
+                'type': 'FeatureCollection',
+                'features': yellowCountries.map(c => ({
+                    'type': 'Feature',
+                    'geometry': {
+                        'type': 'Point',
+                        'coordinates': c.coordinates
+                    },
+                    'properties': {
+                        'name': c.name
+                    }
+                }))
+            }
+        });
+
+        map.addLayer({
+            'id': 'country',
+            'type': 'circle',
+            'source': 'greenCountries',
+            'paint': {
+                'circle-color': '#00FF00',
+                'circle-radius': 4,
+                'circle-stroke-width': 2,
+                'circle-stroke-color': '#ffffff'
+            }
+        });
+
+        map.addLayer({
+            'id': 'country-yellow',
+            'type': 'circle',
+            'source': 'yellowCountries',
+            'paint': {
+                'circle-color': '#FFFF00',
+                'circle-radius': 4,
+                'circle-stroke-width': 2,
+                'circle-stroke-color': '#ffffff'
+            }
+        });
+
+        map.on('movestart', () => {
+            // reset features filter as the map starts moving
+            map.setFilter('country', ['has', 'name']);
+        });
+
+        map.on('moveend', () => {
+            const features = map.queryRenderedFeatures({ layers: ['country', 'country-yellow'] });
+
+            if (features) {
+                const uniqueFeatures = getUniqueFeatures(features, 'name');
+                // Populate features for the listing overlay.
+                renderListings(uniqueFeatures);
+
+                // Clear the input container
+                filterEl.value = '';
+
+                // Store the current features in a variable to
+                // later use for filtering on keyup.
+                countries = uniqueFeatures;
+            }
+        });
+
+        map.on('mousemove', 'country', (e) => {
+            // Change the cursor style as a UI indicator.
+            map.getCanvas().style.cursor = 'pointer';
+
+            // Populate the popup and set its coordinates based on the feature.
+            const feature = e.features[0];
+            popup
+                .setLngLat(feature.geometry.coordinates)
+                .setText(feature.properties.name)
+                .addTo(map);
+        });
+
+        map.on('mouseleave', 'country', () => {
+            map.getCanvas().style.cursor = '';
+            popup.remove();
+        });
+
+        filterEl.addEventListener('keyup', (e) => {
+            const value = normalize(e.target.value);
+
+            // Filter visible features that match the input value.
+            const filtered = [];
+            for (const feature of countries) {
+                const name = normalize(feature.properties.name);
+                if (name.includes(value)) {
+                    filtered.push(feature);
+                }
+            }
+
+            // Populate the sidebar with filtered results
+            renderListings(filtered);
+
+            // Set the filter to populate features into the layer.
+            if (filtered.length) {
+                map.setFilter('country', [
+                    'match',
+                    ['get', 'name'],
+                    filtered.map((feature) => {
+                        return feature.properties.name;
+                    }),
+                    true,
+                    false
+                ]);
+            }
+        });
+
+        // Call this function on initialization
+        // passing an empty array to render an empty state
+        renderListings([]);
+    });
+</script>
+
+</body>
+</html>
