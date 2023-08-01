@@ -98,64 +98,80 @@ body { margin: 0; padding: 0; }
     });
 
     let greenCountries = [
-    { name: 'Implemented', coordinates: [-74.2973, 4.5709] },
-          { name: 'Implemented', coordinates: [103.8467, 46.8625] },
-          { name: 'Implemented', coordinates: [116.4074, 39.9042] },
-          { name: 'Implemented', coordinates: [138.2529, 36.2048] },
-          { name: 'Implemented', coordinates: [101.9758, 4.2105] },
-          { name: 'Implemented', coordinates: [14.5501, 47.5162] },
-          { name: 'Implemented', coordinates: [4.4699, 50.5039] },
-          { name: 'Implemented', coordinates: [25.4858, 42.7339] },
-          { name: 'Implemented', coordinates: [15.2000, 45.1000] },
-          { name: 'Implemented', coordinates: [33.4299, 35.1264] },
-          { name: 'Implemented', coordinates: [15.4730, 49.8175] },
-          { name: 'Implemented', coordinates: [9.5018, 56.2639] },
-          { name: 'Implemented', coordinates: [24.7536, 58.5953] },
-          { name: 'Implemented', coordinates: [25.7482, 61.9241] },
-          { name: 'Implemented', coordinates: [2.2137, 46.6034] },
-          { name: 'Implemented', coordinates: [10.4515, 51.1657] },
-          { name: 'Implemented', coordinates: [21.8243, 39.0742] },
-          { name: 'Implemented', coordinates: [19.0402, 47.4979] },
-          { name: 'Implemented', coordinates: [-6.2603, 53.3498] },
-          { name: 'Implemented', coordinates: [12.5674, 41.8719] },
-          { name: 'Implemented', coordinates: [24.6032, 56.8796] },
-          { name: 'Implemented', coordinates: [23.8813, 55.1694] },
-          { name: 'Implemented', coordinates: [6.1296, 49.8153] },
-          { name: 'Implemented', coordinates: [14.3754, 35.9375] },
-          { name: 'Implemented', coordinates: [4.8979, 52.3779] },
-          { name: 'Implemented', coordinates: [19.1451, 51.9194] },
-          { name: 'Implemented', coordinates: [-9.1393, 38.7223] },
-          { name: 'Implemented', coordinates: [24.9668, 45.9432] },
-          { name: 'Implemented', coordinates: [19.6990, 48.6690] },
-          { name: 'Implemented', coordinates: [14.9955, 46.1512] },
-          { name: 'Implemented', coordinates: [-3.7492, 40.4637] },
-          { name: 'Implemented', coordinates: [18.6435, 60.1282] }
-        // ... add other greenCountries coordinates ...
-    ];
+  {
+    name: 'Implemented',
+    coordinates: [
+    [
+      [-74.2973, 4.5709],
+      [103.8467, 46.8625],
+      [116.4074, 39.9042],
+      [138.2529, 36.2048],
+      [101.9758, 4.2105],
+      [14.5501, 47.5162],
+      [4.4699, 50.5039],
+      [25.4858, 42.7339],
+      [15.2000, 45.1000],
+      [33.4299, 35.1264],
+      [15.4730, 49.8175],
+      [9.5018, 56.2639],
+      [24.7536, 58.5953],
+      [25.7482, 61.9241],
+      [2.2137, 46.6034],
+      [10.4515, 51.1657],
+      [21.8243, 39.0742],
+      [19.0402, 47.4979],
+      [-6.2603, 53.3498],
+      [12.5674, 41.8719],
+      [24.6032, 56.8796],
+      [23.8813, 55.1694],
+      [6.1296, 49.8153],
+      [14.3754, 35.9375],
+      [4.8979, 52.3779],
+      [19.1451, 51.9194],
+      [-9.1393, 38.7223],
+      [24.9668, 45.9432],
+      [19.6990, 48.6690],
+      [14.9955, 46.1512],
+      [-3.7492, 40.4637],
+      [18.6435, 60.1282],
+      [-74.2973, 4.5709]  // Add the first coordinate again to close the polygon
+    ]
+  ]
+  },
+  // Add other countries with their respective polygon coordinates
+];
 
-    let yellowCountries = [
-    { name: 'In Development', coordinates: [-106.3468, 56.1304] },
-          { name: 'In Development', coordinates: [-102.5528, 23.6345] },
-          { name: 'In Development', coordinates: [-70.1627, 18.7357] },
-          { name: 'In Development', coordinates: [-75.0152, -9.1900] },
-          { name: 'In Development', coordinates: [-47.8825, -15.7942] },
-          { name: 'In Development', coordinates: [-71.5429, -35.6751] },
-          { name: 'In Development', coordinates: [-3.4359, 55.3781] },
-          { name: 'In Development', coordinates: [24.7495, -30.5595] },
-          { name: 'In Development', coordinates: [78.9629, 20.5937] },
-          { name: 'In Development', coordinates: [90.3563, 23.6850] },
-          { name: 'In Development', coordinates: [80.7718, 7.8731] },
-          { name: 'In Development', coordinates: [174.8859, -40.9006] },
-          { name: 'In Development', coordinates: [105.3188, 61.5240] },
-          { name: 'In Development', coordinates: [66.9237, 48.0196] },
-          { name: 'In Development', coordinates: [100.9925, 15.8700] },
-          { name: 'In Development', coordinates: [127.7669, 35.9078] },
-          { name: 'In Development', coordinates: [108.2772, 14.0583] },
-          { name: 'In Development', coordinates: [121.7740, 12.8797] },
-          { name: 'In Development', coordinates: [103.8198, 1.3521] },
-          { name: 'In Development', coordinates: [113.9213, -0.7893] }
-        // ... add other yellowCountries coordinates ...
-    ];
+let yellowCountries = [
+  {
+    name: 'In Development',
+    coordinates: [
+    [
+      [-106.3468, 56.1304],
+      [-102.5528, 23.6345],
+      [-70.1627, 18.7357],
+      [-75.0152, -9.1900],
+      [-47.8825, -15.7942],
+      [-71.5429, -35.6751],
+      [-3.4359, 55.3781],
+      [24.7495, -30.5595],
+      [78.9629, 20.5937],
+      [90.3563, 23.6850],
+      [80.7718, 7.8731],
+      [174.8859, -40.9006],
+      [105.3188, 61.5240],
+      [66.9237, 48.0196],
+      [100.9925, 15.8700],
+      [127.7669, 35.9078],
+      [108.2772, 14.0583],
+      [121.7740, 12.8797],
+      [103.8198, 1.3521],
+      [113.9213, -0.7893],
+      [-106.3468, 56.1304]  // Add the first coordinate again to close the polygon
+    ]
+  ]
+  },
+  // Add other countries with their respective polygon coordinates
+];
 
     // Holds visible country features for filtering
     let countries = [];
@@ -236,7 +252,7 @@ body { margin: 0; padding: 0; }
                 'features': greenCountries.map(c => ({
                     'type': 'Feature',
                     'geometry': {
-                        'type': 'Point',
+                        'type': 'Polygon',
                         'coordinates': c.coordinates
                     },
                     'properties': {
@@ -252,7 +268,7 @@ body { margin: 0; padding: 0; }
                 'features': yellowCountries.map(c => ({
                     'type': 'Feature',
                     'geometry': {
-                        'type': 'Point',
+                        'type': 'Polygon',
                         'coordinates': c.coordinates
                     },
                     'properties': {
@@ -262,29 +278,33 @@ body { margin: 0; padding: 0; }
             }
         });
 
-        map.addLayer({
-            'id': 'country',
-            'type': 'circle',
-            'source': 'greenCountries',
-            'paint': {
-                'circle-color': '#00FF00',
-                'circle-radius': 4,
-                'circle-stroke-width': 2,
-                'circle-stroke-color': '#ffffff'
-            }
-        });
+        map.addLayer(
+            {
+                'id': 'greenCountries-fill',
+                'type': 'fill',
+                'source': 'greenCountries',
+                'layout': {},
+                'paint': {
+                    'fill-color': '#01ff00',
+                    'fill-opacity': 0.4
+                }
+            },
+            'country-label'
+        );
 
-        map.addLayer({
-            'id': 'country-yellow',
-            'type': 'circle',
-            'source': 'yellowCountries',
-            'paint': {
-                'circle-color': '#FFFF00',
-                'circle-radius': 4,
-                'circle-stroke-width': 2,
-                'circle-stroke-color': '#ffffff'
-            }
-        });
+        map.addLayer(
+            {
+                'id': 'yellowCountries-fill',
+                'type': 'fill',
+                'source': 'yellowCountries',
+                'layout': {},
+                'paint': {
+                    'fill-color': '#ffff00',
+                    'fill-opacity': 0.4
+                }
+            },
+            'country-label'
+        );
 
         map.on('movestart', () => {
             // reset features filter as the map starts moving
@@ -292,7 +312,9 @@ body { margin: 0; padding: 0; }
         });
 
         map.on('moveend', () => {
-            const features = map.queryRenderedFeatures({ layers: ['country', 'country-yellow'] });
+  const features = map.queryRenderedFeatures({
+    layers: ['greenCountries-fill', 'yellowCountries-fill'],
+  });
 
             if (features) {
                 const uniqueFeatures = getUniqueFeatures(features, 'name');
@@ -308,7 +330,7 @@ body { margin: 0; padding: 0; }
             }
         });
 
-        map.on('mousemove', 'country', (e) => {
+        map.on('mousemove', 'greenCountries-fill', (e) => {
             // Change the cursor style as a UI indicator.
             map.getCanvas().style.cursor = 'pointer';
 
@@ -320,7 +342,7 @@ body { margin: 0; padding: 0; }
                 .addTo(map);
         });
 
-        map.on('mouseleave', 'country', () => {
+        map.on('mouseleave', 'greenCountries-fill', () => {
             map.getCanvas().style.cursor = '';
             popup.remove();
         });
