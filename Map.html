@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Filter features within map view</title>
+<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+<style>
+body { margin: 0; padding: 0; }
+#map { position: absolute; top: 0; bottom: 0; width: 100%; }
+</style>
+</head>
+<body>
+<style>
+    #map {
+        position: absolute;
+        left: 25%;
+        top: 0;
+        bottom: 0;
+        width: 75%;
+    }
+    .map-overlay {
+        position: absolute;
+        width: 25%;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+        background-color: #efefef;
+        max-height: 100%;
+        overflow: hidden;
+    }
+
+    .map-overlay fieldset {
+        display: none;
+        background: #ddd;
+        border: none;
+        padding: 10px;
+        margin: 0;
+    }
+
+    .map-overlay input {
+        display: block;
+        border: none;
+        width: 100%;
+        border-radius: 3px;
+        padding: 10px;
+        margin: 0;
+        box-sizing: border-box;
+    }
+
+    .map-overlay .listing {
+        overflow: auto;
+        max-height: 100%;
+    }
+
+    .map-overlay .listing > * {
+        display: block;
+        padding: 5px 10px;
+        margin: 0;
+    }
+
+    .map-overlay .listing a {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        color: #404;
+        text-decoration: none;
+    }
+
+    .map-overlay .listing a:last-child {
+        border: none;
+    }
+
+    .map-overlay .listing a:hover {
+        background: #f0f0f0;
+    }
+</style>
+
+<div id="map"></div>
+
+<div class="map-overlay">
+    <fieldset>
+        <input id="feature-filter" type="text" placeholder="Filter results by name">
+    </fieldset>
+    <div id="feature-listing" class="listing"></div>
+</div>
+
+<script>
+    mapboxgl.accessToken = 'pk.eyJ1IjoianVuaW9yYW5hbHlzdDEiLCJhIjoiY2xranA1eHV5MHlpczNja2dieDlkZzJiciJ9.CN5Qa40PM2IMpwlyBAFTVA';
+    const map = new mapboxgl.Map({
+        container: 'map',
+        // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: [-98, 38.88],
+        maxZoom: 5,
+        minZoom: 1,
+        zoom: 3
+    });
+
+    let greenCountries = [
+      // ... (your existing greenCountries data) ...
+    ];
+
+    // Holds visible country features for filtering
+    let countries = [];
+
+    // Create a popup, but don't add it to the map yet.
+    const popup = new mapboxgl.Popup({
+        closeButton: false
+    });
+
+    const filterEl = document.getElementById('feature-filter');
+    const listingEl = document.getElementById('feature-listing');
+
+    // ... (your existing renderListings, normalize, and getUniqueFeatures functions) ...
+
+    map.on('load', () => {
+        // Load the GeoJSON data for greenCountries using AJAX
+        fetch('G_output.geojson')
+            .then(response => response.json())
+            .then(data => {
+                map.addSource('greenCountries', {
+                    'type': 'geojson',
+                    'data': data
+                });
+
+                // Add the greenCountries layer after loading the source
+                map.addLayer(
+                    {
+                        'id': 'greenCountries-fill',
+                        'type': 'fill',
+                        'source': 'greenCountries',
+                        'layout': {},
+                        'paint': {
+                            'fill-color': '#01ff00',
+                            'fill-opacity': 0.4
+                        }
+                    },
+                    'country-label'
+                );
+            })
+            .catch(error => {
+                console.error('Error loading GeoJSON:', error);
+            });
+
+        // Load the GeoJSON data for yellowCountries using AJAX
+        fetch('Y_output.geojson')
+            .then(response => response.json())
+            .then(data => {
+                map.addSource('yellowCountries', {
+                    'type': 'geojson',
+                    'data': data
+                });
+
+                // Add the yellowCountries layer after loading the source
+                map.addLayer(
+                    {
+                        'id': 'yellowCountries-fill',
+                        'type': 'fill',
+                        'source': 'yellowCountries',
+                        'layout': {},
+                        'paint': {
+                            'fill-color': '#ffff00',
+                            'fill-opacity': 0.4
+                        }
+                    },
+                    'country-label'
+                );
+            })
+            .catch(error => {
+                console.error('Error loading GeoJSON:', error);
+            });
+
+        // ... (your existing event listeners and renderListings function) ...
+    });
+</script>
+
+</body>
+</html>
