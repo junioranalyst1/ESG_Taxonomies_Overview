@@ -7,8 +7,8 @@
 <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
 <style>
-body { margin: 0; padding: 0; }
-#map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    body { margin: 0; padding: 0; }
+    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
 </style>
 </head>
 <body>
@@ -97,10 +97,6 @@ body { margin: 0; padding: 0; }
         zoom: 3
     });
 
-    let greenCountries = [
-      // ... (your existing greenCountries data) ...
-    ];
-
     // Holds visible country features for filtering
     let countries = [];
 
@@ -113,6 +109,23 @@ body { margin: 0; padding: 0; }
     const listingEl = document.getElementById('feature-listing');
 
     // ... (your existing renderListings, normalize, and getUniqueFeatures functions) ...
+
+    // Add this function to your code
+    function loadGeoJSONData() {
+        // Load the GeoJSON data using AJAX
+        fetch('/Users/nicolashock/Documents/GitHub/ESG_Taxonomies_Overview/map_features.geojson') // Replace 'your_geojson_data.geojson' with the correct path to your GeoJSON file
+            .then(response => response.json())
+            .then(data => {
+                // After the data is loaded, add it to the 'countries' source
+                map.getSource('countries').setData(data);
+
+                // Get all features from the data and store them in the 'countries' variable
+                countries = data.features;
+            })
+            .catch(error => {
+                console.error('Error loading GeoJSON:', error);
+            });
+    }
 
     map.on('load', () => {
         // Load the GeoJSON data for greenCountries using AJAX
@@ -172,7 +185,72 @@ body { margin: 0; padding: 0; }
             });
 
         // ... (your existing event listeners and renderListings function) ...
+        map.on('moveend', () => {
+            // Get the current map bounds
+            const bounds = map.getBounds();
+
+            // Filter features to show only those within the current map bounds
+            const filteredFeatures = countries.filter(feature => {
+                const coordinates = feature.geometry.coordinates;
+                return (
+                    coordinates[0] >= bounds.getWest() &&
+                    coordinates[0] <= bounds.getEast() &&
+                    coordinates[1] >= bounds.getSouth() &&
+                    coordinates[1] <= bounds.getNorth()
+                );
+            });
+
+            // Render the filtered features in the table
+            renderListings(filteredFeatures);
+        });
+
+        // Call the loadGeoJSONData function to load the data after the map is loaded
+        loadGeoJSONData();
     });
+
+    // Add this function to your code
+    function renderListings(features) {
+        const listingEl = document.getElementById('feature-listing');
+
+        // Clear the existing listing
+        listingEl.innerHTML = '';
+
+        if (features.length > 0) {
+            // Create a table element
+            const table = document.createElement('table');
+            table.className = 'listing-table';
+
+            // Create a table header row
+            const headerRow = table.insertRow();
+            headerRow.innerHTML = '<th>Country</th><th>Issuance year</th><th>Most recent update</th><th>Main title</th><th>Institution</th><th>Classification</th><th>Commentary</th><th>Hyperlink to source</th>';
+
+            // Iterate over the features and add rows to the table
+            features.forEach(feature => {
+                const properties = feature.properties;
+
+                // Create a table row
+                const row = table.insertRow();
+
+                // Add cell values for each column
+                row.innerHTML = `
+                    <td>${properties.Country || ''}</td>
+                    <td>${properties['Issuance year'] || ''}</td>
+                    <td>${properties['Most recent update'] || ''}</td>
+                    <td>${properties['Main title'] || ''}</td>
+                    <td>${properties.Institution || ''}</td>
+                    <td>${properties.Classification || ''}</td>
+                    <td>${properties.Commentary || ''}</td>
+                    <td>${properties['Hyperlink to source'] ? `<a href="${properties['Hyperlink to source']}" target="_blank">Link</a>` : ''}</td>
+                `;
+            });
+
+            // Append the table to the listing element
+            listingEl.appendChild(table);
+        } else {
+            listingEl.innerHTML = '<p>No features found.</p>';
+        }
+    }
+
 </script>
 
 </body>
