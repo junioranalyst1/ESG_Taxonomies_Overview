@@ -1,6 +1,3 @@
-// the code below does not run as itg is supposed to. //
-
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -104,7 +101,7 @@ body { margin: 0; padding: 0; }
     });
 
     // Holds visible airport features for filtering
-    let features = [];
+    let airports = [];
 
     // Create a popup, but don't add it to the map yet.
     const popup = new mapboxgl.Popup({
@@ -175,17 +172,16 @@ body { margin: 0; padding: 0; }
     }
 
     map.on('load', () => {
-        // Assuming you have hosted your GeoJSON file at 'YOUR_GEOJSON_URL'
-        map.addSource('your-geojson', {
-            type: 'geojson',
-            data: 'https://github.com/junioranalyst1/ESG_Taxonomies_Overview/blob/e370ded3522a13d55e3488024f2192695ee776ce/Book1.csv'
+        map.addSource('airports', {
+            'type': 'vector',
+            'url': 'mapbox://mapbox.04w69w5j'
         });
-
         map.addLayer({
-            id: 'your-layer', // Choose a unique ID for your layer
-            type: 'circle',
-            source: 'your-geojson',
-            paint: {
+            'id': 'airport',
+            'source': 'airports',
+            'source-layer': 'ne_10m_airports',
+            'type': 'circle',
+            'paint': {
                 'circle-color': '#4264fb',
                 'circle-radius': 4,
                 'circle-stroke-width': 2,
@@ -199,17 +195,18 @@ body { margin: 0; padding: 0; }
         });
 
         map.on('moveend', () => {
-            const features = map.queryRenderedFeatures({ layers: ['your-layer'] });
+            const features = map.queryRenderedFeatures({ layers: ['airport'] });
 
             if (features) {
-                const uniqueFeatures = getUniqueFeatures(features, 'abbreviation'); // Replace 'abbreviation' with the appropriate property name from your GeoJSON data
+                const uniqueFeatures = getUniqueFeatures(features, 'iata_code');
                 // Populate features for the listing overlay.
                 renderListings(uniqueFeatures);
 
                 // Clear the input container
                 filterEl.value = '';
 
-                // Store the current features in a variable to later use for filtering on 'keyup'.
+                // Store the current features in sn `airports` variable to
+                // later use for filtering on `keyup`.
                 airports = uniqueFeatures;
             }
         });
