@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Filter ESG Taxonomies on Map</title>
+<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script> <!-- Include PapaParse library -->
+<style>
+  body { margin: 0; padding: 0; }
+  #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+</style>
+</head>
+<body>
+<style>
+    /* Overlay styles */
+    /* ... (similar to original code) ... */
+</style>
+
+<div id="map"></div>
+
+<div class="map-overlay">
+  <fieldset>
+    <input id="taxonomy-filter" type="text" placeholder="Filter ESG Taxonomies by name">
+  </fieldset>
+  <div id="taxonomy-listing" class="listing"></div>
+</div>
+
+<script>
+  // Your Mapbox access token
+  mapboxgl.accessToken = 'pk.eyJ1IjoianVuaW9yYW5hbHlzdDEiLCJhIjoiY2xranA1eHV5MHlpczNja2dieDlkZzJiciJ9.CN5Qa40PM2IMpwlyBAFTVA';
+
+  // Create a new map instance
+  const map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/streets-v12',
+    center: [-98, 38.88],
+    maxZoom: 5,
+    minZoom: 1,
+    zoom: 3
+  });
+
+  // Holds visible ESG taxonomies for filtering
+  let esgTaxonomies = [];
+
+  const popup = new mapboxgl.Popup({
+    closeButton: false
+  });
+
+  const filterEl = document.getElementById('taxonomy-filter');
+  const listingEl = document.getElementById('taxonomy-listing');
+
+  // Adjust this function to extract the necessary properties from your CSV data
+  function renderListings(taxonomies) {
+    // Clear any existing listings
+    listingEl.innerHTML = '';
+
+    if (taxonomies.length) {
+      for (const taxonomy of taxonomies) {
+        const itemLink = document.createElement('a');
+        itemLink.href = taxonomy.link; // Assuming 'link' is the property name in your CSV
+        itemLink.target = '_blank';
+        itemLink.textContent = taxonomy.name; // Assuming 'name' is the property name in your CSV
+        listingEl.appendChild(itemLink);
+      }
+    }
+  }
+
+  // Load and parse CSV data
+  Papa.parse('my-data.csv', {
+    header: true,
+    download: true,
+    skipEmptyLines: true,
+    complete: function (results) {
+      // Assuming 'Latitude', 'Longitude', 'Name', 'Link' are your column names
+      esgTaxonomies = results.data.map(entry => ({
+        latitude: parseFloat(entry.Latitude),
+        longitude: parseFloat(entry.Longitude),
+        name: entry.Name,
+        link: entry['Link']
+      }));
+
+      // Call renderListings with your parsed data
+      renderListings(esgTaxonomies);
+    }
+  });
+
+  map.on('load', () => {
+    // Similar to original code for map setup
+  });
+
+  // Modify the event listeners and functions according to your ESG taxonomy data and requirements
+
+  // Event listener for filtering taxonomies by name
+  filterEl.addEventListener('keyup', (e) => {
+    const value = e.target.value.toLowerCase();
+
+    // Filter taxonomies based on the input value
+    const filteredTaxonomies = esgTaxonomies.filter(taxonomy =>
+      taxonomy.name.toLowerCase().includes(value)
+    );
+
+    // Call renderListings with filtered taxonomies
+    renderListings(filteredTaxonomies);
+  });
+
+  // Event listener for displaying taxonomy info on map hover
+  map.on('mousemove', (e) => {
+    const features = map.queryRenderedFeatures(e.point);
+
+    if (features && features.length > 0) {
+      const feature = features[0];
+      const taxonomy = esgTaxonomies.find(taxonomy =>
+        taxonomy.latitude === feature.geometry.coordinates[1] &&
+        taxonomy.longitude === feature.geometry.coordinates[0]
+      );
+
+      if (taxonomy) {
+        popup
+          .setLngLat(feature.geometry.coordinates)
+          .setText(`${taxonomy.name} - ${taxonomy.link}`)
+          .addTo(map);
+      }
+    }
+  });
+
+  // Event listener for clearing popup on mouse leave
+  map.on('mouseleave', () => {
+    popup.remove();
+  });
+
+</script>
+
+</body>
+</html>
