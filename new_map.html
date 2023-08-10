@@ -2,17 +2,13 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Filter features within map view</title>
+<title>Filter Taxonomies within Map View</title>
 <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
 <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
 <style>
-body { margin: 0; padding: 0; }
-#map { position: absolute; top: 0; bottom: 0; width: 100%; }
-</style>
-</head>
-<body>
-<style>
+    body { margin: 0; padding: 0; }
+    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
     #map {
         position: absolute;
         left: 25%;
@@ -84,7 +80,16 @@ body { margin: 0; padding: 0; }
         cursor: pointer;
     }
 
+    .map-overlay select {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 3px;
+    }
 </style>
+</head>
+<body>
 
 <div id="map"></div>
 
@@ -92,112 +97,183 @@ body { margin: 0; padding: 0; }
     <fieldset>
         <input id="feature-filter" type="text" placeholder="Filter results by name">
     </fieldset>
+    <fieldset>
+        <select id="category-filter">
+            <option value="all">All Categories</option>
+            <!-- Add more category options here -->
+        </select>
+    </fieldset>
     <div id="feature-listing" class="listing"></div>
 </div>
 
 <script>
-	// TO MAKE THE MAP APPEAR YOU MUST
-	// ADD YOUR ACCESS TOKEN FROM
-	// https://account.mapbox.com
-	mapboxgl.accessToken = 'pk.eyJ1IjoianVuaW9yYW5hbHlzdDEiLCJhIjoiY2xranA1eHV5MHlpczNja2dieDlkZzJiciJ9.CN5Qa40PM2IMpwlyBAFTVA';
-    const map = new mapboxgl.Map({
-        container: 'map',
-        // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
-        style: 'mapbox://styles/mapbox/streets-v12',
-        center: [-98, 38.88],
-        maxZoom: 5,
-        minZoom: 1,
-        zoom: 3
-    });
+mapboxgl.accessToken = 'pk.eyJ1IjoianVuaW9yYW5hbHlzdDEiLCJhIjoiY2xranA1eHV5MHlpczNja2dieDlkZzJiciJ9.CN5Qa40PM2IMpwlyBAFTVA';
+const map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/streets-v12',
+    center: [-98, 38.88],
+    maxZoom: 5,
+    minZoom: 1,
+    zoom: 3
+});
 
-    // Holds visible airport features for filtering
-    let airports = [];
+const popup = new mapboxgl.Popup({
+    closeButton: false
+});
 
-    // Create a popup, but don't add it to the map yet.
-    const popup = new mapboxgl.Popup({
-        closeButton: false
-    });
+const filterEl = document.getElementById('feature-filter');
+const listingEl = document.getElementById('feature-listing');
+const categoryFilterEl = document.getElementById('category-filter');
 
-    const filterEl = document.getElementById('feature-filter');
-    const listingEl = document.getElementById('feature-listing');
-
-    function renderListings(features) {
-        const empty = document.createElement('p');
-        // Clear any existing listings
-        listingEl.innerHTML = '';
-        if (features.length) {
-            for (const feature of features) {
-                const itemLink = document.createElement('a');
-                const label = `${feature.properties.name} (${feature.properties.abbrev})`;
-                itemLink.href = feature.properties.wikipedia;
-                itemLink.target = '_blank';
-                itemLink.textContent = label;
-                itemLink.addEventListener('mouseover', () => {
-                    // Highlight corresponding feature on the map
-                    popup
-                        .setLngLat(feature.geometry.coordinates)
-                        .setText(label)
-                        .addTo(map);
-                });
-                listingEl.appendChild(itemLink);
-            }
-
-            // Show the filter input
-            filterEl.parentNode.style.display = 'block';
-        } else if (features.length === 0 && filterEl.value !== '') {
-            empty.textContent = 'No results found';
-            listingEl.appendChild(empty);
-        } else {
-            empty.textContent = 'Drag the map to populate results';
-            listingEl.appendChild(empty);
-
-            // Hide the filter input
-            filterEl.parentNode.style.display = 'none';
-
-            // remove features filter
-            map.setFilter('airport', ['has', 'abbrev']);
-        }
-    }
-
-    function normalize(string) {
-        return string.trim().toLowerCase();
-    }
-
-    // Because features come from tiled vector data,
-    // feature geometries may be split
-    // or duplicated across tile boundaries.
-    // As a result, features may appear
-    // multiple times in query results.
-    function getUniqueFeatures(features, comparatorProperty) {
-        const uniqueIds = new Set();
-        const uniqueFeatures = [];
+function renderListings(features) {
+    const empty = document.createElement('p');
+    listingEl.innerHTML = '';
+    if (features.length) {
         for (const feature of features) {
-            const id = feature.properties[comparatorProperty];
-            if (!uniqueIds.has(id)) {
-                uniqueIds.add(id);
-                uniqueFeatures.push(feature);
-            }
+            const itemLink = document.createElement('a');
+            itemLink.href = feature.properties.link;
+            itemLink.target = '_blank';
+            itemLink.textContent = feature.properties.name;
+            itemLink.addEventListener('mouseover', () => {
+                popup
+                    .setLngLat(feature.geometry.coordinates)
+                    .setText(feature.properties.name)
+                    .addTo(map);
+            });
+            listingEl.appendChild(itemLink);
         }
-        return uniqueFeatures;
+
+        const filteredCategories = new Set(features.map(feature => feature.properties.category));
+        categoryFilterEl.innerHTML = '';
+        const allOption = document.createElement('option');
+        allOption.value = 'all';
+        allOption.textContent = 'All Categories';
+        categoryFilterEl.appendChild(allOption);
+        for (const category of filteredCategories) {
+            const option = document.createElement('option');
+            option.value = category;
+            option.textContent = category;
+            categoryFilterEl.appendChild(option);
+        }
+        filterEl.parentNode.style.display = 'block';
+    } else if (features.length === 0 && filterEl.value !== '') {
+        empty.textContent = 'No results found';
+        listingEl.appendChild(empty);
+    } else {
+        empty.textContent = 'Drag the map to populate results';
+        listingEl.appendChild(empty);
+        filterEl.parentNode.style.display = 'none';
     }
+}
 
-    const esgTaxonomies = [
-        {
-            latitude: 25,
-            longitude: 104,
-            name: 'Taxonomy 1',
-            link: 'https://asean.org/wp-content/uploads/2021/11/ASEAN-Taxonomy.pdf'
-        },
-        {
-            latitude: 23.685,
-            longitude: 90.3563,
-            name: 'Taxonomy 2',
-            link: 'https://documents1.worldbank.org/curated/en/953011593410423487/pdf/Developing-a-National-Green-Taxonomy-A-World-Bank-Guide.pdf'
-        }
-        // Add more taxonomies here
-    ];
+function normalize(string) {
+    return string.trim().toLowerCase();
+}
 
-    map.on('load', () => {
+const esgTaxonomies = [
+    {
+        latitude: 25,
+        longitude: 104,
+        name: 'ASEAN Taxonomy version 1',
+        link: 'https://asean.org/wp-content/uploads/2021/11/ASEAN-Taxonomy.pdf',
+        category: 'Policy'
+
+    },
+    {
+        latitude: 23.685,
+        longitude: 90.3563,
+        name: 'Sustainable Finance Policy for Banks and Financial Institutions',
+        link: 'http://documents1.worldbank.org/curated/en/953011593410423487/pdf/Developing-a-National-Green-Taxonomy-A-World-Bank-Guide.pdf',
+        category: 'Policy'
+    },
+    {
+        latitude: 56.1304,
+        longitude: -106.3468,
+        name: 'Transition Finance Taxonomy',
+        link: 'https://publications.gc.ca/collections/collection_2019/eccc/En4-350-2-2019-eng.pdf',
+        category: 'Policy'
+    },
+    {
+        latitude: 35.8617,
+        longitude: 104.1954,
+        name: 'Green Bond Endorsed-Projects Catalogue',
+        link: 'http://www.pbc.gov.cn/goutongjiaoliu/113456/113469/4236341/index.html',
+        category: 'Policy'
+    },
+    {
+        latitude: 30.9756,
+        longitude: 112.2707,
+        name: 'Green Industry Guidance Catalogue (2019 Edition)',
+        link: 'https://www.ndrc.gov.cn/fggz/hjyzy/stwmjs/201903/t20190305_1220625.html',
+        category: 'Policy'
+    },
+    {
+        latitude: 50,
+        longitude: 15,
+        name: 'Regulation (EU) 2020/852 (EU Taxonomy)',
+        link: 'https://eur-lex.europa.eu/legal-content/EN/TXT/?toc=OJ%3AL%3A2020%3A198%3ATOC&uri=uriserv%3AOJ.L_.2020.198.01.0013.01.ENG',
+        category: 'Policy'
+    },
+    {
+        latitude: 47.1625,
+        longitude: 19.5033,
+        name: 'Social Taxonomy',
+        link: 'https://ec.europa.eu/info/sites/default/files/business_economy_euro/banking_and_finance/documents/280222-sustainable-finance-platform-finance-report-social-taxonomy.pdf',
+        category: 'Policy'
+    },
+    {
+        latitude: 17.385044,
+        longitude: 78.486671,
+        name: 'Common Ground Taxonomy - Instruction report',
+        link: 'https://ec.europa.eu/info/files/international-platform-sustainable-finance-common-ground-taxonomy-report-2021_en',
+        category: 'Policy'
+    },
+    {
+        latitude: 48.0196,
+        longitude: 66.9237,
+        name: 'Concept on introduction and development of green finance instruments and principles',
+        link: 'https://gfc.aifc.kz/uploads/Concept%20on%20introduction%20and%20development%20of%20green%20finance%20instruments%20and%20principles.pdf',
+        category: 'Policy'
+    },
+    {
+        latitude: 4.2105,
+        longitude: 101.9758,
+        name: 'Climate Change and Principle-based Taxonomy',
+        link: 'https://www.bnm.gov.my/documents/20124/938039/Climate+Change+and+Principle-based+Taxonomy.pdf',
+        category: 'Policy'
+    },
+    {
+        latitude: 46.8625,
+        longitude: 103.8467,
+        name: 'Mongolia Green Taxonomy',
+        link: 'https://www.greenfinanceplatform.org/policies-and-regulations/mongolia-green-taxonomy',
+        category: 'Policy'
+    },
+    {
+        latitude: 61.524,
+        longitude: 105.3188,
+        name: 'Green Taxonomy',
+        link: 'http://publication.pravo.gov.ru/Document/View/0001202109240043',
+        category: 'Policy'
+    },
+    {
+        latitude: 1.3521,
+        longitude: 103.8198,
+        name: 'Green and transition taxonomy',
+        link: 'https://abs.org.sg/industry-guidelines/gfit-taxonomy-public-consultation',
+        category: 'Policy'
+    },
+    {
+        latitude: -30.5595,
+        longitude: 22.9375,
+        name: 'South African Green Finance Taxonomy',
+        link: 'https://sustainablefinanceinitiative.org.za/taxonomy/',
+        category: 'Policy'
+    }
+    // Add more taxonomies here
+];
+
+map.on('load', () => {
     map.addSource('esgTaxonomies', {
         'type': 'geojson',
         'data': {
@@ -215,137 +291,79 @@ body { margin: 0; padding: 0; }
             }))
         }
     });
-    
+
     map.addLayer({
         'id': 'taxonomy-markers',
         'type': 'circle',
         'source': 'esgTaxonomies',
         'paint': {
             'circle-color': 'green',
-            'circle-radius': 10, // Adjust the size of the markers here
+            'circle-radius': 10,
             'circle-stroke-width': 2,
             'circle-stroke-color': 'white'
         }
     });
-    
-    
-    
-        map.addSource('airports', {
-            'type': 'vector',
-            'url': 'mapbox://mapbox.04w69w5j'
-        });
-        map.addLayer({
-            'id': 'airport',
-            'source': 'airports',
-            'source-layer': 'ne_10m_airports',
-            'type': 'circle',
-            'paint': {
-                'circle-color': '#4264fb',
-                'circle-radius': 4,
-                'circle-stroke-width': 2,
-                'circle-stroke-color': '#ffffff'
-            }
-        });
 
-        map.on('movestart', () => {
-            // reset features filter as the map starts moving
-            map.setFilter('airport', ['has', 'abbrev']);
-        });
-
-        map.on('moveend', () => {
-            const features = map.queryRenderedFeatures({ layers: ['airport'] });
-
-            if (features) {
-                const uniqueFeatures = getUniqueFeatures(features, 'iata_code');
-                // Populate features for the listing overlay.
-                renderListings(uniqueFeatures);
-
-                // Clear the input container
-                filterEl.value = '';
-
-                // Store the current features in sn `airports` variable to
-                // later use for filtering on `keyup`.
-                airports = uniqueFeatures;
-            }
-        });
-
-        map.on('mousemove', 'airport', (e) => {
-            // Change the cursor style as a UI indicator.
-            map.getCanvas().style.cursor = 'pointer';
-
-            // Populate the popup and set its coordinates based on the feature.
-            const feature = e.features[0];
-            popup
-                .setLngLat(feature.geometry.coordinates)
-                .setText(
-                    `${feature.properties.name} (${feature.properties.abbrev})`
-                )
-                .addTo(map);
-        });
-
-        map.on('mouseleave', 'airport', () => {
-            map.getCanvas().style.cursor = '';
-            popup.remove();
-        });
-
-        filterEl.addEventListener('keyup', (e) => {
-            const value = normalize(e.target.value);
-
-            // Filter visible features that match the input value.
-            const filtered = [];
-            for (const feature of airports) {
-                const name = normalize(feature.properties.name);
-                const code = normalize(feature.properties.abbrev);
-                if (name.includes(value) || code.includes(value)) {
-                    filtered.push(feature);
-                }
-            }
-
-            // Add the esgTaxonomies points to the map with custom markers
-            for (const taxonomy of esgTaxonomies) {
-                const el = document.createElement('div');
-                el.className = 'taxonomy-marker'; // Apply your custom marker styles here
-
-                new mapboxgl.Marker(el)
-                    .setLngLat([taxonomy.longitude, taxonomy.latitude])
-                    .setPopup(new mapboxgl.Popup().setText(taxonomy.name))
-                    .addTo(map);
-            }
-
-
-            // Populate the sidebar with filtered results
-            renderListings(filtered);
-
-            // Set the filter to populate features into the layer.
-            if (filtered.length) {
-                map.setFilter('airport', [
-                    'match',
-                    ['get', 'abbrev'],
-                    filtered.map((feature) => {
-                        return feature.properties.abbrev;
-                    }),
-                    true,
-                    false
-                ]);
-                map.setFilter('taxonomy-markers', [
-                    'match',
-                    ['get', 'name'],
-                    filtered.map((feature) => {
-                        return feature.properties.name;
-                    }),
-                    true,
-                    false
-                ]);
-            } else {
-            // Remove filter for taxonomy markers if no features are visible
-                map.setFilter('taxonomy-markers', ['has', 'name', false]);
-            }
-        });
-
-        // Call this function on initialization
-        // passing an empty array to render an empty state
-        renderListings([]);
+    map.on('movestart', () => {
+        map.setFilter('taxonomy-markers', ['has', 'name', false]);
     });
+
+    map.on('moveend', () => {
+        const features = map.queryRenderedFeatures({ layers: ['taxonomy-markers'] });
+        if (features) {
+            renderListings(features);
+        }
+    });
+
+    map.on('mousemove', 'taxonomy-markers', (e) => {
+        map.getCanvas().style.cursor = 'pointer';
+        const feature = e.features[0];
+        popup
+            .setLngLat(feature.geometry.coordinates)
+            .setText(feature.properties.name)
+            .addTo(map);
+    });
+
+    map.on('mouseleave', 'taxonomy-markers', () => {
+        map.getCanvas().style.cursor = '';
+        popup.remove();
+    });
+
+    filterEl.addEventListener('keyup', (e) => {
+        const value = normalize(e.target.value);
+        const filteredTaxonomies = esgTaxonomies.filter(taxonomy =>
+            normalize(taxonomy.name).includes(value)
+        );
+
+        map.getSource('esgTaxonomies').setData({
+            'type': 'FeatureCollection',
+            'features': filteredTaxonomies.map(taxonomy => ({
+                'type': 'Feature',
+                'properties': {
+                    'name': taxonomy.name,
+                    'link': taxonomy.link
+                },
+                'geometry': {
+                    'type': 'Point',
+                    'coordinates': [taxonomy.longitude, taxonomy.latitude]
+                }
+            }))
+        });
+
+        renderListings(filteredTaxonomies);
+    });
+
+    const categories = new Set(esgTaxonomies.map(taxonomy => taxonomy.category));
+    categories.add('all');
+    for (const category of categories) {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category === 'all' ? 'All Categories' : category;
+        categoryFilterEl.appendChild(option);
+    }
+
+    renderListings([]);
+});
 </script>
 
 </body>
