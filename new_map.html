@@ -87,6 +87,11 @@
         margin-bottom: 10px;
         border-radius: 3px;
     }
+
+    .popup-heading {
+        margin-bottom: 50px;
+    }
+
 </style>
 </head>
 <body>
@@ -135,11 +140,41 @@ function renderListings(features) {
             itemLink.target = '_blank';
             itemLink.textContent = feature.properties.name;
             itemLink.addEventListener('mouseover', () => {
-                popup
-                    .setLngLat(feature.geometry.coordinates)
-                    .setText(feature.properties.name)
-                    .addTo(map);
-            });
+    const taxonomy = esgTaxonomies.find(item => item.name === feature.properties.name);
+    if (taxonomy) {
+        const popupContent = document.createElement('div');
+
+        const strongElement = document.createElement('strong');
+        strongElement.textContent = feature.properties.name;
+        strongElement.classList.add('popup-heading');
+        popupContent.appendChild(strongElement);
+
+
+        const brElement = document.createElement('br');
+        popupContent.appendChild(brElement);
+
+        const hrElement = document.createElement('hr');
+        popupContent.appendChild(hrElement);
+
+        const categoryTitle = document.createElement('strong');
+        categoryTitle.textContent = 'Category: ';
+        popupContent.appendChild(categoryTitle);
+
+        const categoryText = document.createTextNode(taxonomy.category);
+        popupContent.appendChild(categoryText);
+
+        const brElement2 = document.createElement('br');
+        popupContent.appendChild(brElement2);
+
+        const commentaryTitle = document.createElement('strong');
+        commentaryTitle.textContent = 'Commentary: ';
+        popupContent.appendChild(commentaryTitle);
+
+        const commentaryText = document.createTextNode(taxonomy.commentary);
+        popupContent.appendChild(commentaryText);
+    }
+});
+
             listingEl.appendChild(itemLink);
         }
 
@@ -184,7 +219,8 @@ const esgTaxonomies = [
         longitude: 90.3563,
         name: 'Sustainable Finance Policy for Banks and Financial Institutions',
         link: 'http://documents1.worldbank.org/curated/en/953011593410423487/pdf/Developing-a-National-Green-Taxonomy-A-World-Bank-Guide.pdf',
-        category: 'Policy'
+        Year: '2017',
+        commentary: 'The policy includes Sustainable Finance Taxonomy along with a country perspective Green Taxonomy. The Green Finance and the Sustainable Linked Finance taxonomies together comprise the Sustainable Finance Taxonomy. Comprehensive lists of green products/projects/initiatives and identical areas of sustainable linked finance have been included in the policy. This policy provides clarity and guidance to identify green and Sustainable Linked Finance.'
     },
     {
         latitude: 56.1304,
@@ -316,13 +352,50 @@ map.on('load', () => {
     });
 
     map.on('mousemove', 'taxonomy-markers', (e) => {
-        map.getCanvas().style.cursor = 'pointer';
-        const feature = e.features[0];
-        popup
-            .setLngLat(feature.geometry.coordinates)
-            .setText(feature.properties.name)
-            .addTo(map);
-    });
+    map.getCanvas().style.cursor = 'pointer';
+    const feature = e.features[0];
+
+    const popupContent = document.createElement('div');
+
+    const strongElement = document.createElement('strong');
+    strongElement.textContent = feature.properties.name;
+    popupContent.appendChild(strongElement);
+
+    const brElement1 = document.createElement('br');
+    popupContent.appendChild(brElement1);
+
+    const brElement2 = document.createElement('br');
+    popupContent.appendChild(brElement2);
+
+    const taxonomy = esgTaxonomies.find(item => item.name === feature.properties.name);
+    if (taxonomy) {
+        const issuanceYearTitle = document.createElement('strong'); // New property
+        issuanceYearTitle.textContent = 'Issuance Year: '; // New property
+        popupContent.appendChild(issuanceYearTitle); // New property
+
+        const issuanceYearText = document.createTextNode(taxonomy.issuanceYear); // New property
+        popupContent.appendChild(issuanceYearText); // New property
+
+        const brElement3 = document.createElement('br');
+        popupContent.appendChild(brElement3);
+
+        const commentaryTitle = document.createElement('strong');
+        commentaryTitle.textContent = 'Commentary: ';
+        popupContent.appendChild(commentaryTitle);
+
+        const commentaryText = document.createTextNode(taxonomy.commentary);
+        popupContent.appendChild(commentaryText);
+    }
+
+    popup
+        .setLngLat(feature.geometry.coordinates)
+        .setDOMContent(popupContent)
+        .addTo(map);
+});
+
+
+
+
 
     map.on('mouseleave', 'taxonomy-markers', () => {
         map.getCanvas().style.cursor = '';
