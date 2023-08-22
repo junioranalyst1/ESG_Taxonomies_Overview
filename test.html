@@ -8,7 +8,6 @@
 <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
 <style>
     body { margin: 0; padding: 0; }
-    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
     #map {
         position: absolute;
         left: 25%;
@@ -92,24 +91,22 @@
         margin-bottom: 50px;
     }
 
+    .highlighted {
+        background-color: yellow;
+    }
+
+
 </style>
 </head>
 <body>
 
 <div id="map"></div>
 
-<div class="map-overlay">
-    <fieldset>
-        <input id="feature-filter" type="text" placeholder="Filter results by country">
-    </fieldset>
-    <fieldset>
-        <select id="category-filter">
-            <option value="all">All Categories</option>
-            <!-- Add more category options here -->
-        </select>
-    </fieldset>
-    <div id="feature-listing" class="listing"></div>
+<div class="feature-filter">
+    <input type="text" onkeyup="filterFeatureList(this)" placeholder="Search countries..." style="width:100%; padding:5px;">
 </div>
+<div id="feature-listing"></div>
+
 
 <script>
 mapboxgl.accessToken = 'pk.eyJ1IjoianVuaW9yYW5hbHlzdDEiLCJhIjoiY2xranA1eHV5MHlpczNja2dieDlkZzJiciJ9.CN5Qa40PM2IMpwlyBAFTVA';
@@ -122,185 +119,53 @@ const map = new mapboxgl.Map({
     zoom: 3
 });
 
-const popup = new mapboxgl.Popup({
-    closeButton: false
-});
 
-const esgTaxonomies = [
-    {
-        latitude: 25,
-        longitude: 104,
-        name: 'ASEAN Taxonomy version 1',
-        country: 'ASEAN',
-        link: 'https://asean.org/wp-content/uploads/2021/11/ASEAN-Taxonomy.pdf',
-        category: 'Policy'
-
-    },
-    {
-        latitude: 23.685,
-        longitude: 90.3563,
-        name: 'Sustainable Finance Policy for Banks and Financial Institutions',
-        country: 'Bangladesh',
-        link: 'http://documents1.worldbank.org/curated/en/953011593410423487/pdf/Developing-a-National-Green-Taxonomy-A-World-Bank-Guide.pdf',
-        Year: '2017',
-        commentary: 'The policy includes Sustainable Finance Taxonomy along with a country perspective Green Taxonomy. The Green Finance and the Sustainable Linked Finance taxonomies together comprise the Sustainable Finance Taxonomy. Comprehensive lists of green products/projects/initiatives and identical areas of sustainable linked finance have been included in the policy. This policy provides clarity and guidance to identify green and Sustainable Linked Finance.'
-    },
-    {
-        latitude: 56.1304,
-        longitude: -106.3468,
-        name: 'Transition Finance Taxonomy',
-        country: 'Canada',
-        link: 'https://publications.gc.ca/collections/collection_2019/eccc/En4-350-2-2019-eng.pdf',
-        category: 'Policy'
-    },
-    {
-        latitude: 35.8617,
-        longitude: 104.1954,
-        name: 'Green Bond Endorsed-Projects Catalogue',
-        country: 'China',
-        link: 'http://www.pbc.gov.cn/goutongjiaoliu/113456/113469/4236341/index.html',
-        category: 'Policy'
-    },
-    {
-        latitude: 30.9756,
-        longitude: 112.2707,
-        name: 'Green Industry Guidance Catalogue (2019 Edition)',
-        country: 'China',
-        link: 'https://www.ndrc.gov.cn/fggz/hjyzy/stwmjs/201903/t20190305_1220625.html',
-        category: 'Policy'
-    },
-    {
-        latitude: 50,
-        longitude: 15,
-        name: 'Regulation (EU) 2020/852 (EU Taxonomy)',
-        country: 'EU',
-        link: 'https://eur-lex.europa.eu/legal-content/EN/TXT/?toc=OJ%3AL%3A2020%3A198%3ATOC&uri=uriserv%3AOJ.L_.2020.198.01.0013.01.ENG',
-        category: 'Policy'
-    },
-    {
-        latitude: 47.1625,
-        longitude: 19.5033,
-        name: 'Social Taxonomy',
-        country: 'EU',
-        link: 'https://ec.europa.eu/info/sites/default/files/business_economy_euro/banking_and_finance/documents/280222-sustainable-finance-platform-finance-report-social-taxonomy.pdf',
-        category: 'Policy'
-    },
-    {
-        latitude: 17.385044,
-        longitude: 78.486671,
-        name: 'Common Ground Taxonomy - Instruction report',
-        country: 'EU',
-        link: 'https://ec.europa.eu/info/files/international-platform-sustainable-finance-common-ground-taxonomy-report-2021_en',
-        category: 'Policy'
-    },
-    {
-        latitude: 48.0196,
-        longitude: 66.9237,
-        name: 'Concept on introduction and development of green finance instruments and principles',
-        country: 'Kazakhstan',
-        link: 'https://gfc.aifc.kz/uploads/Concept%20on%20introduction%20and%20development%20of%20green%20finance%20instruments%20and%20principles.pdf',
-        category: 'Policy'
-    },
-    {
-        latitude: 4.2105,
-        longitude: 101.9758,
-        name: 'Climate Change and Principle-based Taxonomy',
-        country: 'Malaysia',
-        link: 'https://www.bnm.gov.my/documents/20124/938039/Climate+Change+and+Principle-based+Taxonomy.pdf',
-        category: 'Policy'
-    },
-    {
-        latitude: 46.8625,
-        longitude: 103.8467,
-        name: 'Mongolia Green Taxonomy',
-        country: 'Mongolia',
-        link: 'https://www.greenfinanceplatform.org/policies-and-regulations/mongolia-green-taxonomy',
-        category: 'Policy'
-    },
-    {
-        latitude: 61.524,
-        longitude: 105.3188,
-        name: 'Green Taxonomy',
-        country: 'Russia',
-        link: 'http://publication.pravo.gov.ru/Document/View/0001202109240043',
-        category: 'Policy'
-    },
-    {
-        latitude: 1.3521,
-        longitude: 103.8198,
-        name: 'Green and transition taxonomy',
-        country: 'Singapore',
-        link: 'https://abs.org.sg/industry-guidelines/gfit-taxonomy-public-consultation',
-        category: 'Policy'
-    },
-    {
-        latitude: -30.5595,
-        longitude: 22.9375,
-        name: 'South African Green Finance Taxonomy',
-        country: 'South Africa',
-        link: 'https://sustainablefinanceinitiative.org.za/taxonomy/',
-        category: 'Policy'
-    }
-    // Add more taxonomies here
-];
 
 const filterEl = document.getElementById('feature-filter');
 const listingEl = document.getElementById('feature-listing');
 const categoryFilterEl = document.getElementById('category-filter');
 
 function renderListings(features) {
-    const empty = document.createElement('p');
     listingEl.innerHTML = '';
     if (features.length) {
         for (const feature of features) {
             const itemLink = document.createElement('a');
             itemLink.href = feature.properties.link;
             itemLink.target = '_blank';
-            itemLink.textContent = feature.properties.name;
+            itemLink.textContent = esgTaxonomies.find(taxonomy => taxonomy.name === feature.properties.name).country;  // Change to display country
             itemLink.addEventListener('mouseover', () => {
-    const taxonomy = esgTaxonomies.find(item => item.name === feature.properties.name);
-    if (taxonomy) {
-        const popupContent = document.createElement('div');
-
-        const strongElement = document.createElement('strong');
-        strongElement.textContent = feature.properties.name;
-        strongElement.classList.add('popup-heading');
-        popupContent.appendChild(strongElement);
-
-
-        const brElement = document.createElement('br');
-        popupContent.appendChild(brElement);
-
-        const hrElement = document.createElement('hr');
-        popupContent.appendChild(hrElement);
-
-        const categoryTitle = document.createElement('strong');
-        categoryTitle.textContent = 'Category: ';
-        popupContent.appendChild(categoryTitle);
-
-        const categoryText = document.createTextNode(taxonomy.category);
-        popupContent.appendChild(categoryText);
-
-        const brElement2 = document.createElement('br');
-        popupContent.appendChild(brElement2);
-
-        const commentaryTitle = document.createElement('strong');
-        commentaryTitle.textContent = 'Commentary: ';
-        popupContent.appendChild(commentaryTitle);
-
-        const commentaryText = document.createTextNode(taxonomy.commentary);
-        popupContent.appendChild(commentaryText);
-    }
-});
+                const taxonomy = esgTaxonomies.find(item => item.name === feature.properties.name);
+                if (taxonomy) {
+                    const popupContent = document.createElement('div');
+                    const strongElement = document.createElement('strong');
+                    strongElement.textContent = feature.properties.name;
+                    strongElement.classList.add('popup-heading');
+                    popupContent.appendChild(strongElement);
+                    popupContent.appendChild(document.createElement('br'));
+                    popupContent.appendChild(document.createElement('hr'));
+                    const categoryTitle = document.createElement('strong');
+                    categoryTitle.textContent = 'Category: ';
+                    popupContent.appendChild(categoryTitle);
+                    popupContent.appendChild(document.createTextNode(taxonomy.category));
+                    popupContent.appendChild(document.createElement('br'));
+                    const commentaryTitle = document.createElement('strong');
+                    commentaryTitle.textContent = 'Commentary: ';
+                    popupContent.appendChild(commentaryTitle);
+                    popupContent.appendChild(document.createTextNode(taxonomy.commentary));
+                    popup.setLngLat([taxonomy.longitude, taxonomy.latitude])
+                        .setDOMContent(popupContent)
+                        .addTo(map);
+                }
+            });
 
             listingEl.appendChild(itemLink);
         }
-
-        const filteredCountries = new Set(features.map(feature => feature.properties.country));
+        
+        const filteredCountries = new Set(features.map(feature => esgTaxonomies.find(taxonomy => taxonomy.name === feature.properties.name).country));
         categoryFilterEl.innerHTML = '';
         const allOption = document.createElement('option');
         allOption.value = 'all';
-        allOption.textContent = 'All Categories';
+        allOption.textContent = 'All Countries';
         categoryFilterEl.appendChild(allOption);
         for (const country of filteredCountries) {
             const option = document.createElement('option');
@@ -308,15 +173,7 @@ function renderListings(features) {
             option.textContent = country;
             categoryFilterEl.appendChild(option);
         }
-
         filterEl.parentNode.style.display = 'block';
-    } else if (features.length === 0 && filterEl.value !== '') {
-        empty.textContent = 'No results found';
-        listingEl.appendChild(empty);
-    } else {
-        empty.textContent = 'Drag the map to populate results';
-        listingEl.appendChild(empty);
-        filterEl.parentNode.style.display = 'none';
     }
 }
 
@@ -324,159 +181,239 @@ function normalize(string) {
     return string.trim().toLowerCase();
 }
 
-function generateCountryFeatures() {
-    const countryFeatures = esgTaxonomies.map(taxonomy => ({
+// ESG Taxonomies ... (as is)
+const esgTaxonomies = [
+    {
+        latitude: 25,
+        longitude: 104,
+        name: 'ASEAN Taxonomy version 1',
+        link: 'https://asean.org/wp-content/uploads/2021/11/ASEAN-Taxonomy.pdf',
+        year: '2010',
+        commentary: 'Policy',
+        country: 'China'
+
+    },
+    {
+        latitude: 23.685,
+        longitude: 90.3563,
+        name: 'Sustainable Finance Policy for Banks and Financial Institutions',
+        link: 'http://documents1.worldbank.org/curated/en/953011593410423487/pdf/Developing-a-National-Green-Taxonomy-A-World-Bank-Guide.pdf',
+        year: '2017',
+        commentary: 'The policy includes Sustainable Finance Taxonomy along with a country perspective Green Taxonomy. The Green Finance and the Sustainable Linked Finance taxonomies together comprise the Sustainable Finance Taxonomy. Comprehensive lists of green products/projects/initiatives and identical areas of sustainable linked finance have been included in the policy. This policy provides clarity and guidance to identify green and Sustainable Linked Finance.',
+        country: 'Bangladesh'
+    },
+    {
+        latitude: 56.1304,
+        longitude: -106.3468,
+        name: 'Transition Finance Taxonomy',
+        link: 'https://publications.gc.ca/collections/collection_2019/eccc/En4-350-2-2019-eng.pdf',
+        year: '2013',
+        commentary: 'Policy',
+        country: 'Canada'
+    },
+    {
+        latitude: 35.8617,
+        longitude: 104.1954,
+        name: 'Green Bond Endorsed-Projects Catalogue',
+        link: 'http://www.pbc.gov.cn/goutongjiaoliu/113456/113469/4236341/index.html',
+        year: '2018',
+        commentary: 'Policy',
+        country: 'China'
+    },
+    {
+        latitude: 30.9756,
+        longitude: 112.2707,
+        name: 'Green Industry Guidance Catalogue (2019 Edition)',
+        link: 'https://www.ndrc.gov.cn/fggz/hjyzy/stwmjs/201903/t20190305_1220625.html',
+        year: '2022',
+        commentary: 'Policy',
+        country: 'China'
+    },
+    {
+        latitude: 50,
+        longitude: 15,
+        name: 'Regulation (EU) 2020/852 (EU Taxonomy)',
+        link: 'https://eur-lex.europa.eu/legal-content/EN/TXT/?toc=OJ%3AL%3A2020%3A198%3ATOC&uri=uriserv%3AOJ.L_.2020.198.01.0013.01.ENG',
+        year: '2021',
+        commentary: 'Policy',
+        country: 'EU'
+    },
+    {
+        latitude: 47.1625,
+        longitude: 19.5033,
+        name: 'Social Taxonomy',
+        link: 'https://ec.europa.eu/info/sites/default/files/business_economy_euro/banking_and_finance/documents/280222-sustainable-finance-platform-finance-report-social-taxonomy.pdf',
+        year: '2019',
+        commentary: 'Policy',
+        country: 'EU'
+    },
+    {
+        latitude: 17.385044,
+        longitude: 78.486671,
+        name: 'Common Ground Taxonomy - Instruction report',
+        link: 'https://ec.europa.eu/info/files/international-platform-sustainable-finance-common-ground-taxonomy-report-2021_en',
+        year: '2016',
+        commentary: 'Policy',
+        country: 'EU'
+    },
+    {
+        latitude: 48.0196,
+        longitude: 66.9237,
+        name: 'Concept on introduction and development of green finance instruments and principles',
+        link: 'https://gfc.aifc.kz/uploads/Concept%20on%20introduction%20and%20development%20of%20green%20finance%20instruments%20and%20principles.pdf',
+        year: '2014',
+        commentary: 'Policy',
+        country: 'Kazakhstan'
+    },
+    {
+        latitude: 4.2105,
+        longitude: 101.9758,
+        name: 'Climate Change and Principle-based Taxonomy',
+        link: 'https://www.bnm.gov.my/documents/20124/938039/Climate+Change+and+Principle-based+Taxonomy.pdf',
+        year: '2022',
+        commentary: 'Policy',
+        country: 'Malaysia'
+    },
+    {
+        latitude: 46.8625,
+        longitude: 103.8467,
+        name: 'Mongolia Green Taxonomy',
+        link: 'https://www.greenfinanceplatform.org/policies-and-regulations/mongolia-green-taxonomy',
+        year: '2015',
+        commentary: 'Policy',
+        country: 'Mongolia'
+    },
+    {
+        latitude: 61.524,
+        longitude: 105.3188,
+        name: 'Green Taxonomy',
+        link: 'http://publication.pravo.gov.ru/Document/View/0001202109240043',
+        year: '2018',
+        commentary: 'Policy',
+        country: 'Russia'
+    },
+    {
+        latitude: 1.3521,
+        longitude: 103.8198,
+        name: 'Green and transition taxonomy',
+        link: 'https://abs.org.sg/industry-guidelines/gfit-taxonomy-public-consultation',
+        year: '2023',
+        commentary: 'Policy',
+        country: 'Singapore'
+    },
+    {
+        latitude: -30.5595,
+        longitude: 22.9375,
+        name: 'South African Green Finance Taxonomy',
+        link: 'https://sustainablefinanceinitiative.org.za/taxonomy/',
+        year: '2020',
+        commentary: 'Policy',
+        country: 'South Africa'
+    }
+    // Add more taxonomies here
+];
+
+function featureToGeoJSON(taxonomy) {
+    return {
         'type': 'Feature',
         'properties': {
-            'country': taxonomy.country
+            'name': taxonomy.name,
+            'link': taxonomy.link
         },
         'geometry': {
             'type': 'Point',
             'coordinates': [taxonomy.longitude, taxonomy.latitude]
         }
-    }));
-
-    return {
-        'type': 'FeatureCollection',
-        'features': countryFeatures
     };
 }
 
 map.on('load', () => {
-    map.addSource('countryFeatures', {
+    map.addSource('esgTaxonomies', {
         'type': 'geojson',
-        'data': generateCountryFeatures()
+        'data': {
+            'type': 'FeatureCollection',
+            'features': esgTaxonomies.map(taxonomy => featureToGeoJSON(taxonomy))
+        }
     });
 
     map.addLayer({
-        'id': 'country-markers',
+        'id': 'taxonomy-markers',
         'type': 'circle',
-        'source': 'countryFeatures',
+        'source': 'esgTaxonomies',
         'paint': {
             'circle-color': 'green',
             'circle-radius': 10,
             'circle-stroke-width': 2,
             'circle-stroke-color': 'white'
-        },
-        'filter': ['has', 'country']
-    });
-
-    map.on('movestart', () => {
-    map.setFilter('country-markers', ['has', 'country']);
-    });
-
-
-    map.on('moveend', () => {
-        const features = map.queryRenderedFeatures({ layers: ['country-markers'] });
-        if (features) {
-            const selectedCountry = categoryFilterEl.value;
-            const filteredFeatures = selectedCountry === 'all' ? features : features.filter(feature =>
-                normalize(feature.properties.country).includes(selectedCountry)
-            );
-            renderListings(filteredFeatures);
-
-            // Update the marker data
-            map.getSource('countryFeatures').setData(generateCountryFeatures());
-
-            categoryFilterEl.addEventListener('change', () => {
-                const selectedCountry = categoryFilterEl.value;
-                const filteredFeatures = selectedCountry === 'all' ? features : features.filter(feature =>
-                    normalize(feature.properties.country).includes(selectedCountry)
-                );
-                renderListings(filteredFeatures);
-            });
         }
     });
 
-
-    map.on('mousemove', 'country-markers', (e) => {
-    map.getCanvas().style.cursor = 'pointer';
-    const feature = e.features[0];
-
-    const popupContent = document.createElement('div');
-
-    const strongElement = document.createElement('strong');
-    strongElement.textContent = feature.properties.name;
-    popupContent.appendChild(strongElement);
-
-    const brElement1 = document.createElement('br');
-    popupContent.appendChild(brElement1);
-
-    const brElement2 = document.createElement('br');
-    popupContent.appendChild(brElement2);
-
-    const taxonomy = esgTaxonomies.find(item => item.name === feature.properties.name);
-    if (taxonomy) {
-        const issuanceYearTitle = document.createElement('strong'); // New property
-        issuanceYearTitle.textContent = 'Issuance Year: '; // New property
-        popupContent.appendChild(issuanceYearTitle); // New property
-
-        const issuanceYearText = document.createTextNode(taxonomy.issuanceYear); // New property
-        popupContent.appendChild(issuanceYearText); // New property
-
-        const brElement3 = document.createElement('br');
-        popupContent.appendChild(brElement3);
-
-        const commentaryTitle = document.createElement('strong');
-        commentaryTitle.textContent = 'Commentary: ';
-        popupContent.appendChild(commentaryTitle);
-
-        const commentaryText = document.createTextNode(taxonomy.commentary);
-        popupContent.appendChild(commentaryText);
-    }
-
-    popup
-        .setLngLat(feature.geometry.coordinates)
-        .setDOMContent(popupContent)
-        .addTo(map);
-});
-
-
-
-
-
-    map.on('mouseleave', 'country-markers', () => {
-        map.getCanvas().style.cursor = '';
-        popup.remove();
-    });
-
-    filterEl.addEventListener('keyup', (e) => {
-        const value = normalize(e.target.value);
-        const filteredTaxonomies = esgTaxonomies.filter(taxonomy =>
-            normalize(taxonomy.country).includes(value)
-        );
-
-
-        map.getSource('esgTaxonomies').setData({
-            'type': 'FeatureCollection',
-            'features': filteredTaxonomies.map(taxonomy => ({
-                'type': 'Feature',
-                'properties': {
-                    'name': taxonomy.name,
-                    'link': taxonomy.link
-                },
-                'geometry': {
-                    'type': 'Point',
-                    'coordinates': [taxonomy.longitude, taxonomy.latitude]
-                }
-            }))
+    function filterPopupContent(inputElement) {
+        const searchValue = inputElement.value.toLowerCase();
+        const contentDiv = inputElement.nextElementSibling;
+        const textElements = contentDiv.querySelectorAll('.popup-text');
+    
+        textElements.forEach(element => {
+            if (element.textContent.toLowerCase().includes(searchValue)) {
+                element.parentElement.style.display = '';
+            } else {
+                element.parentElement.style.display = 'none';
+            }
         });
-
-        renderListings(filteredTaxonomies);
-    });
-
-    const categories = new Set(esgTaxonomies.map(taxonomy => taxonomy.category));
-    categories.add('all');
-    for (const category of categories) {
-        const option = document.createElement('option');
-        option.value = category;
-        option.textContent = category === 'all' ? 'All Categories' : category;
-        categoryFilterEl.appendChild(option);
     }
 
-    renderListings([]);
-});
-</script>
+    function highlightText(content, term) {
+        const highlightStartTag = "<span class='highlighted'>";
+        const highlightEndTag = "</span>";
+        const newText = content.replace(new RegExp(`(${term})`, 'ig'), `${highlightStartTag}$1${highlightEndTag}`);
+        return newText;
+    }
 
-</body>
-</html>
+    function filterPopupContent(inputElement) {
+        const searchValue = inputElement.value.toLowerCase();
+        const contentDiv = inputElement.nextElementSibling;
+        const textElements = contentDiv.querySelectorAll('.popup-text');
+
+        textElements.forEach(element => {
+            if (searchValue) {
+                element.innerHTML = highlightText(element.textContent, searchValue);
+            } else {
+                // Remove all highlighting if searchValue is empty
+                element.innerHTML = element.textContent;
+            }
+        });
+    }
+
+
+    esgTaxonomies.forEach(taxonomy => {
+        new mapboxgl.Popup({
+                closeOnClick: false,
+                closeButton: false,
+                offset: [0, -15]
+            })
+            .setLngLat([taxonomy.longitude, taxonomy.latitude])
+            .setHTML(`
+                <input type="text" onkeyup="filterPopupContent(this)" placeholder="Search..." style="width:100%; padding:5px; margin-bottom:10px;">
+                <div class="popup-content">
+                    <strong>${taxonomy.country}</strong><br>
+                    <u>Name:</u> <span class="popup-text">${taxonomy.name}</span><br>
+                    <u>Year:</u> <span class="popup-text">${taxonomy.year}</span><br>
+                    <u>Commentary:</u> <span class="popup-text">${taxonomy.commentary ? taxonomy.commentary : 'N/A'}</span>
+                </div>
+            `)
+            .addTo(map);
+    });
+
+    map.on('movestart', () => {
+        map.setFilter('taxonomy-markers', ['has', 'name', false]);
+    });
+
+    map.on('moveend', () => {
+        const features = map.queryRenderedFeatures({ layers: ['taxonomy-markers'] });
+        if (features) {
+            renderListings(features);
+        }
+    });
+});
+
+</script>
