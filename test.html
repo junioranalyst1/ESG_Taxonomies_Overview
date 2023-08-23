@@ -95,7 +95,6 @@
         background-color: yellow;
     }
 
-
 </style>
 </head>
 <body>
@@ -107,9 +106,9 @@
 </div>
 <div id="feature-listing"></div>
 
-
 <script>
 mapboxgl.accessToken = 'pk.eyJ1IjoianVuaW9yYW5hbHlzdDEiLCJhIjoiY2xranA1eHV5MHlpczNja2dieDlkZzJiciJ9.CN5Qa40PM2IMpwlyBAFTVA';
+
 const map = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/streets-v12',
@@ -118,8 +117,6 @@ const map = new mapboxgl.Map({
     minZoom: 1,
     zoom: 3
 });
-
-
 
 const filterEl = document.getElementById('feature-filter');
 const listingEl = document.getElementById('feature-listing');
@@ -181,7 +178,42 @@ function normalize(string) {
     return string.trim().toLowerCase();
 }
 
-// ESG Taxonomies ... (as is)
+function featureToGeoJSON(taxonomy) {
+    return {
+        'type': 'Feature',
+        'properties': {
+            'name': taxonomy.name,
+            'link': taxonomy.link
+        },
+        'geometry': {
+            'type': 'Point',
+            'coordinates': [taxonomy.longitude, taxonomy.latitude]
+        }
+    };
+}
+
+function highlightText(content, term) {
+    const highlightStartTag = "<span class='highlighted'>";
+    const highlightEndTag = "</span>";
+    const newText = content.replace(new RegExp(`(${term})`, 'ig'), `${highlightStartTag}$1${highlightEndTag}`);
+    return newText;
+}
+
+function filterPopupContent(inputElement) {
+    const searchValue = inputElement.value.toLowerCase();
+    const contentDiv = inputElement.nextElementSibling;
+    const textElements = contentDiv.querySelectorAll('.popup-text');
+
+    textElements.forEach(element => {
+        if (searchValue) {
+            element.innerHTML = highlightText(element.textContent, searchValue);
+        } else {
+            // Remove all highlighting if searchValue is empty
+            element.innerHTML = element.textContent;
+        }
+    });
+}
+
 const esgTaxonomies = [
     {
         latitude: 25,
@@ -313,19 +345,41 @@ const esgTaxonomies = [
     // Add more taxonomies here
 ];
 
-function featureToGeoJSON(taxonomy) {
-    return {
-        'type': 'Feature',
-        'properties': {
-            'name': taxonomy.name,
-            'link': taxonomy.link
-        },
-        'geometry': {
-            'type': 'Point',
-            'coordinates': [taxonomy.longitude, taxonomy.latitude]
-        }
-    };
-}
+const popup = new mapboxgl.Popup({
+    closeButton: false,
+    closeOnClick: true
+});
+
+map.on('click', 'taxonomy-markers', (e) => {
+    const taxonomyName = e.features[0].properties.name;
+    const taxonomy = esgTaxonomies.find(item => item.name === taxonomyName);
+    if (taxonomy) {
+        const popupContent = document.createElement('div');
+        const strongElement = document.createElement('strong');
+        strongElement.textContent = taxonomyName;
+        strongElement.classList.add('popup-heading');
+        popupContent.appendChild(strongElement);
+        popupContent.appendChild(document.createElement('br'));
+        popupContent.appendChild(document.createElement('hr'));
+        const categoryTitle = document.createElement('strong');
+        categoryTitle.textContent = 'Category: ';
+        popupContent.appendChild(categoryTitle);
+        popupContent.appendChild(document.createTextNode(taxonomy.category));
+        popupContent.appendChild(document.createElement('br'));
+        const commentaryTitle = document.createElement('strong');
+        commentaryTitle.textContent = 'Commentary: ';
+        popupContent.appendChild(commentaryTitle);
+        popupContent.appendChild(document.createTextNode(taxonomy.commentary));
+
+        popup.setLngLat(e.lngLat)
+            .setDOMContent(popupContent)
+            .addTo(map);
+    }
+});
+
+map.on('click', () => {
+    popup.remove();
+});
 
 map.on('load', () => {
     map.addSource('esgTaxonomies', {
@@ -384,24 +438,23 @@ map.on('load', () => {
         });
     }
 
-
     esgTaxonomies.forEach(taxonomy => {
         new mapboxgl.Popup({
-                closeOnClick: false,
-                closeButton: false,
-                offset: [0, -15]
-            })
-            .setLngLat([taxonomy.longitude, taxonomy.latitude])
-            .setHTML(`
-                <input type="text" onkeyup="filterPopupContent(this)" placeholder="Search..." style="width:100%; padding:5px; margin-bottom:10px;">
-                <div class="popup-content">
-                    <strong>${taxonomy.country}</strong><br>
-                    <u>Name:</u> <span class="popup-text">${taxonomy.name}</span><br>
-                    <u>Year:</u> <span class="popup-text">${taxonomy.year}</span><br>
-                    <u>Commentary:</u> <span class="popup-text">${taxonomy.commentary ? taxonomy.commentary : 'N/A'}</span>
-                </div>
-            `)
-            .addTo(map);
+            closeOnClick: false,
+            closeButton: false,
+            offset: [0, -15]
+        })
+        .setLngLat([taxonomy.longitude, taxonomy.latitude])
+        .setHTML(`
+            <input type="text" onkeyup="filterPopupContent(this)" placeholder="Search..." style="width:100%; padding:5px; margin-bottom:10px;">
+            <div class="popup-content">
+                <strong>${taxonomy.country}</strong><br>
+                <u>Name:</u> <span class="popup-text">${taxonomy.name}</span><br>
+                <u>Year:</u> <span class="popup-text">${taxonomy.year}</span><br>
+                <u>Commentary:</u> <span class="popup-text">${taxonomy.commentary ? taxonomy.commentary : 'N/A'}</span>
+            </div>
+        `)
+        .addTo(map);
     });
 
     map.on('movestart', () => {
