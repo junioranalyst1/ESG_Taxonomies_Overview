@@ -23,18 +23,7 @@
         left: 0;
         font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
         background-color: #efefef;
-        max-height: 100%;
-        overflow: hidden;
     }
-
-    .map-overlay fieldset {
-        display: none;
-        background: #ddd;
-        border: none;
-        padding: 10px;
-        margin: 0;
-    }
-
     .map-overlay input {
         display: block;
         border: none;
@@ -44,140 +33,114 @@
         margin: 0;
         box-sizing: border-box;
     }
-
     .map-overlay .listing {
         overflow: auto;
         max-height: 100%;
     }
-
-    .map-overlay .listing > * {
+    .map-overlay .listing a {
         display: block;
         padding: 5px 10px;
-        margin: 0;
-    }
-
-    .map-overlay .listing a {
         border-bottom: 1px solid rgba(0, 0, 0, 0.1);
         color: #404;
         text-decoration: none;
     }
-
     .map-overlay .listing a:last-child {
         border: none;
     }
-
     .map-overlay .listing a:hover {
         background: #f0f0f0;
     }
-
-    .taxonomy-marker {
-        width: 16px;
-        height: 16px;
-        background-color: green;
-        border-radius: 50%;
-        border: 2px solid white;
-        cursor: pointer;
+    .mapboxgl-popup-content {
+        padding: 5px !important; 
+    }
+    .mapboxgl-popup {
+        max-width: 300px !important;
+    }
+    .popup-flex-container {
+        display: flex;
+        flex-direction: column;
+        height: 300px; /* or whatever fixed height you want */
+        position: relative;
     }
 
-    .map-overlay select {
-        display: block;
+    .popup-flex-container input[type="text"] {
+        flex: 0 0 auto;
         width: 100%;
-        padding: 10px;
+        padding: 5px;
         margin-bottom: 10px;
-        border-radius: 3px;
+        box-sizing: border-box;
     }
-
-    .popup-heading {
-        margin-bottom: 50px;
+    .popup-content-details {
+        flex: 1 1 auto;
+        overflow: auto;
+        height: 250px; /* or whatever value that works for you */
     }
 
     .highlighted {
         background-color: yellow;
     }
 
+    .feature-filter {
+        padding: 10px;
+    }
+
+    #feature-listing {
+        overflow: auto;
+        max-height: calc(100% - 50px);  /* Adjusts for the height of the search input */
+    }
+
+    .custom-popup {
+        max-width: 300px !important;
+        /* Set a fixed height and make content scrollable */
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+
 </style>
 </head>
 <body>
-
-<div id="map"></div>
-
-<div class="feature-filter">
-    <input type="text" onkeyup="filterFeatureList(this)" placeholder="Search countries..." style="width:100%; padding:5px;">
+<div class="map-overlay">
+    <div class="feature-filter">
+        <input type="text" placeholder="Search countries..." style="width:100%; padding:5px;">
+    </div>
+    <div id="feature-listing" class="listing"></div>
 </div>
-<div id="feature-listing"></div>
+<div id="map"></div>
 
 <script>
 mapboxgl.accessToken = 'pk.eyJ1IjoianVuaW9yYW5hbHlzdDEiLCJhIjoiY2xranA1eHV5MHlpczNja2dieDlkZzJiciJ9.CN5Qa40PM2IMpwlyBAFTVA';
-
 const map = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/streets-v12',
-    center: [-98, 38.88],
+    center: [0, 0],
     maxZoom: 5,
     minZoom: 1,
-    zoom: 3
+    zoom: 2
 });
 
 const filterEl = document.getElementById('feature-filter');
 const listingEl = document.getElementById('feature-listing');
-const categoryFilterEl = document.getElementById('category-filter');
-
 function renderListings(features) {
     listingEl.innerHTML = '';
     if (features.length) {
+        const listContainer = document.createElement('ul');
         for (const feature of features) {
+            const listItem = document.createElement('li');
             const itemLink = document.createElement('a');
             itemLink.href = feature.properties.link;
             itemLink.target = '_blank';
-            itemLink.textContent = esgTaxonomies.find(taxonomy => taxonomy.name === feature.properties.name).country;  // Change to display country
-            itemLink.addEventListener('mouseover', () => {
-                const taxonomy = esgTaxonomies.find(item => item.name === feature.properties.name);
-                if (taxonomy) {
-                    const popupContent = document.createElement('div');
-                    const strongElement = document.createElement('strong');
-                    strongElement.textContent = feature.properties.name;
-                    strongElement.classList.add('popup-heading');
-                    popupContent.appendChild(strongElement);
-                    popupContent.appendChild(document.createElement('br'));
-                    popupContent.appendChild(document.createElement('hr'));
-                    const categoryTitle = document.createElement('strong');
-                    categoryTitle.textContent = 'Category: ';
-                    popupContent.appendChild(categoryTitle);
-                    popupContent.appendChild(document.createTextNode(taxonomy.category));
-                    popupContent.appendChild(document.createElement('br'));
-                    const commentaryTitle = document.createElement('strong');
-                    commentaryTitle.textContent = 'Commentary: ';
-                    popupContent.appendChild(commentaryTitle);
-                    popupContent.appendChild(document.createTextNode(taxonomy.commentary));
-                    popup.setLngLat([taxonomy.longitude, taxonomy.latitude])
-                        .setDOMContent(popupContent)
-                        .addTo(map);
-                }
-            });
-
-            listingEl.appendChild(itemLink);
+            itemLink.textContent = esgTaxonomies.find(taxonomy => taxonomy.name === feature.properties.name).country;
+            listItem.appendChild(itemLink);  
+            listContainer.appendChild(listItem);
         }
-        
-        const filteredCountries = new Set(features.map(feature => esgTaxonomies.find(taxonomy => taxonomy.name === feature.properties.name).country));
-        categoryFilterEl.innerHTML = '';
-        const allOption = document.createElement('option');
-        allOption.value = 'all';
-        allOption.textContent = 'All Countries';
-        categoryFilterEl.appendChild(allOption);
-        for (const country of filteredCountries) {
-            const option = document.createElement('option');
-            option.value = country;
-            option.textContent = country;
-            categoryFilterEl.appendChild(option);
-        }
-        filterEl.parentNode.style.display = 'block';
+        listingEl.appendChild(listContainer);
     }
 }
 
 function normalize(string) {
     return string.trim().toLowerCase();
 }
-
 function featureToGeoJSON(taxonomy) {
     return {
         'type': 'Feature',
@@ -191,29 +154,24 @@ function featureToGeoJSON(taxonomy) {
         }
     };
 }
-
 function highlightText(content, term) {
     const highlightStartTag = "<span class='highlighted'>";
     const highlightEndTag = "</span>";
     const newText = content.replace(new RegExp(`(${term})`, 'ig'), `${highlightStartTag}$1${highlightEndTag}`);
     return newText;
 }
-
 function filterPopupContent(inputElement) {
     const searchValue = inputElement.value.toLowerCase();
     const contentDiv = inputElement.nextElementSibling;
     const textElements = contentDiv.querySelectorAll('.popup-text');
-
     textElements.forEach(element => {
         if (searchValue) {
             element.innerHTML = highlightText(element.textContent, searchValue);
         } else {
-            // Remove all highlighting if searchValue is empty
             element.innerHTML = element.textContent;
         }
     });
 }
-
 const esgTaxonomies = [
     {
         latitude: 25,
@@ -345,9 +303,25 @@ const esgTaxonomies = [
     // Add more taxonomies here
 ];
 
+function featureToGeoJSON(taxonomy) {
+    return {
+        'type': 'Feature',
+        'properties': {
+            'name': taxonomy.name,
+            'link': taxonomy.link
+        },
+        'geometry': {
+            'type': 'Point',
+            'coordinates': [taxonomy.longitude, taxonomy.latitude]
+        }
+    };
+}
+// ... (other code)
+
 const popup = new mapboxgl.Popup({
     closeButton: false,
-    closeOnClick: true
+    closeOnClick: true,
+    className: 'custom-popup' // Add this class
 });
 
 map.on('click', 'taxonomy-markers', (e) => {
@@ -355,30 +329,23 @@ map.on('click', 'taxonomy-markers', (e) => {
     const taxonomy = esgTaxonomies.find(item => item.name === taxonomyName);
     if (taxonomy) {
         const popupContent = document.createElement('div');
-        const strongElement = document.createElement('strong');
-        strongElement.textContent = taxonomyName;
-        strongElement.classList.add('popup-heading');
-        popupContent.appendChild(strongElement);
-        popupContent.appendChild(document.createElement('br'));
-        popupContent.appendChild(document.createElement('hr'));
-        const categoryTitle = document.createElement('strong');
-        categoryTitle.textContent = 'Category: ';
-        popupContent.appendChild(categoryTitle);
-        popupContent.appendChild(document.createTextNode(taxonomy.category));
-        popupContent.appendChild(document.createElement('br'));
-        const commentaryTitle = document.createElement('strong');
-        commentaryTitle.textContent = 'Commentary: ';
-        popupContent.appendChild(commentaryTitle);
-        popupContent.appendChild(document.createTextNode(taxonomy.commentary));
+        popupContent.innerHTML = `
+            <div class="popup-flex-container">
+                <input type="text" onkeyup="filterPopupContent(this)" placeholder="Search...">
+                <div class="popup-content-details">
+                    <strong>${taxonomy.country}</strong><br>
+                    <u>Name:</u> <span class="popup-text">${taxonomy.name}</span><br>
+                    <u>Year:</u> <span class="popup-text">${taxonomy.year}</span><br>
+                    <u>Commentary:</u> <span class="popup-text">${taxonomy.commentary ? taxonomy.commentary : 'N/A'}</span>
+                </div>
+            </div>
+        `;
 
         popup.setLngLat(e.lngLat)
             .setDOMContent(popupContent)
             .addTo(map);
+        e.preventDefault();  // This will prevent the map click event from firing
     }
-});
-
-map.on('click', () => {
-    popup.remove();
 });
 
 map.on('load', () => {
@@ -389,7 +356,6 @@ map.on('load', () => {
             'features': esgTaxonomies.map(taxonomy => featureToGeoJSON(taxonomy))
         }
     });
-
     map.addLayer({
         'id': 'taxonomy-markers',
         'type': 'circle',
@@ -401,66 +367,24 @@ map.on('load', () => {
             'circle-stroke-color': 'white'
         }
     });
-
-    function filterPopupContent(inputElement) {
-        const searchValue = inputElement.value.toLowerCase();
-        const contentDiv = inputElement.nextElementSibling;
-        const textElements = contentDiv.querySelectorAll('.popup-text');
     
-        textElements.forEach(element => {
-            if (element.textContent.toLowerCase().includes(searchValue)) {
-                element.parentElement.style.display = '';
-            } else {
-                element.parentElement.style.display = 'none';
-            }
-        });
-    }
-
-    function highlightText(content, term) {
-        const highlightStartTag = "<span class='highlighted'>";
-        const highlightEndTag = "</span>";
-        const newText = content.replace(new RegExp(`(${term})`, 'ig'), `${highlightStartTag}$1${highlightEndTag}`);
-        return newText;
-    }
-
+    // Only keep one definition of filterPopupContent function
     function filterPopupContent(inputElement) {
         const searchValue = inputElement.value.toLowerCase();
         const contentDiv = inputElement.nextElementSibling;
         const textElements = contentDiv.querySelectorAll('.popup-text');
-
         textElements.forEach(element => {
             if (searchValue) {
                 element.innerHTML = highlightText(element.textContent, searchValue);
             } else {
-                // Remove all highlighting if searchValue is empty
                 element.innerHTML = element.textContent;
             }
         });
     }
-
-    esgTaxonomies.forEach(taxonomy => {
-        new mapboxgl.Popup({
-            closeOnClick: false,
-            closeButton: false,
-            offset: [0, -15]
-        })
-        .setLngLat([taxonomy.longitude, taxonomy.latitude])
-        .setHTML(`
-            <input type="text" onkeyup="filterPopupContent(this)" placeholder="Search..." style="width:100%; padding:5px; margin-bottom:10px;">
-            <div class="popup-content">
-                <strong>${taxonomy.country}</strong><br>
-                <u>Name:</u> <span class="popup-text">${taxonomy.name}</span><br>
-                <u>Year:</u> <span class="popup-text">${taxonomy.year}</span><br>
-                <u>Commentary:</u> <span class="popup-text">${taxonomy.commentary ? taxonomy.commentary : 'N/A'}</span>
-            </div>
-        `)
-        .addTo(map);
-    });
-
+    
     map.on('movestart', () => {
         map.setFilter('taxonomy-markers', ['has', 'name', false]);
     });
-
     map.on('moveend', () => {
         const features = map.queryRenderedFeatures({ layers: ['taxonomy-markers'] });
         if (features) {
@@ -468,5 +392,4 @@ map.on('load', () => {
         }
     });
 });
-
 </script>
