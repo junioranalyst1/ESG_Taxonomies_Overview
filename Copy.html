@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Filter Taxonomies within Map View</title>
+<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+<style>
+    body { margin: 0; padding: 0; }
+    #map {
+        position: absolute;
+        left: 25%;
+        top: 0;
+        bottom: 0;
+        width: 75%;
+    }
+    .map-overlay {
+        position: absolute;
+        width: 25%;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+        background-color: #efefef;
+    }
+    .map-overlay input {
+        display: block;
+        border: none;
+        width: 100%;
+        border-radius: 3px;
+        padding: 10px;
+        margin: 0;
+        box-sizing: border-box;
+    }
+    .map-overlay .listing {
+        overflow: auto;
+        max-height: 100%;
+    }
+    .map-overlay .listing a {
+        display: block;
+        padding: 5px 10px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        color: #404;
+        text-decoration: none;
+    }
+    .map-overlay .listing a:last-child {
+        border: none;
+    }
+    .map-overlay .listing a:hover {
+        background: #f0f0f0;
+    }
+    .mapboxgl-popup-content {
+        padding: 5px !important;
+        scroll-behavior: auto; 
+    }
+    .mapboxgl-popup {
+        max-width: 300px !important;
+        scroll-behavior: auto;
+    }
+    .popup-flex-container {
+        display: flex;
+        flex-direction: column;
+        height: 400px; /* or whatever fixed height you want */
+        position: relative;
+        scroll-behavior: auto;
+    }
+
+    .popup-flex-container input[type="text"] {
+        flex: 0 0 auto;
+        width: 100%;
+        padding: 5px;
+        margin-bottom: 10px;
+        box-sizing: border-box;
+        scroll-behavior: auto;
+    }
+    .popup-content-details {
+        flex: 1 1 auto;
+        overflow: scroll;
+        height: 250px; /* or whatever value that works for you */
+        scroll-behavior: auto;
+    }
+
+    .highlighted {
+        background-color: yellow;
+    }
+
+    .feature-filter {
+        padding: 10px;
+    }
+
+    #feature-listing {
+        overflow: auto;
+        max-height: calc(100% - 50px);  /* Adjusts for the height of the search input */
+    }
+
+    .custom-popup {
+        max-width: 300px !important;
+        /* Set a fixed height and make content scrollable */
+        max-height: 500px;
+        overflow-y: hidden;
+        scroll-behavior: auto;
+        text-align: left;
+    }
+
+    .custom-popup .your-inner-container {
+        max-height: 400px;
+        overflow-y: scroll;
+        scroll-behavior: auto;
+        text-align: left;
+    }
+
+    .collapsible {
+        margin-bottom: 5px;
+    }
+
+    .collapsible-header {
+        cursor: pointer;
+        padding: 10px;
+        border: 1px solid #ddd;
+        font-weight: bold;
+    }
+
+    .collapsible-content {
+        padding: 0 10px;
+        display: none;
+        overflow: hidden;
+        border: 1px solid #ddd;
+        border-top: none;
+    }
+
+    .collapsible-arrow {
+        float: right;
+    }
+
+</style>
+</head>
+<body>
+<div class="map-overlay">
+    <div class="feature-filter">
+        <input type="text" placeholder="Click the link below for the full taxonomy report" style="width:100%; padding:5px;">
+    </div>
+    <div id="feature-listing" class="listing"></div>
+</div>
+<div id="map"></div>
+
+<script>
+mapboxgl.accessToken = 'pk.eyJ1IjoianVuaW9yYW5hbHlzdDEiLCJhIjoiY2xranA1eHV5MHlpczNja2dieDlkZzJiciJ9.CN5Qa40PM2IMpwlyBAFTVA';
+const map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/streets-v12',
+    center: [0, 0],
+    maxZoom: 5,
+    minZoom: 1,
+    zoom: 2
+});
+
+const filterEl = document.getElementById('feature-filter');
+const listingEl = document.getElementById('feature-listing');
+function renderListings(features) {
+    listingEl.innerHTML = '';
+    if (features.length) {
+        const listContainer = document.createElement('ul');
+        for (const feature of features) {
+            const listItem = document.createElement('li');
+            const itemLink = document.createElement('a');
+            itemLink.href = feature.properties.link;
+            itemLink.target = '_blank';
+            itemLink.textContent = esgTaxonomies.find(taxonomy => taxonomy.name === feature.properties.name).country;
+            listItem.appendChild(itemLink);  
+            listContainer.appendChild(listItem);
+        }
+        listingEl.appendChild(listContainer);
+    }
+}
+
+function normalize(string) {
+    return string.trim().toLowerCase();
+}
+function featureToGeoJSON(taxonomy) {
+    return {
+        'type': 'Feature',
+        'properties': {
+            'name': taxonomy.name,
+            'link': taxonomy.link
+        },
+        'geometry': {
+            'type': 'Point',
+            'coordinates': [taxonomy.longitude, taxonomy.latitude]
+        }
+    };
+}
+function highlightText(content, term) {
+    const highlightStartTag = "<span class='highlighted'>";
+    const highlightEndTag = "</span>";
+    const newText = content.replace(new RegExp(`(${term})`, 'ig'), `${highlightStartTag}$1${highlightEndTag}`);
+    return newText;
+}
+function filterPopupContent(inputElement) {
+    const searchValue = inputElement.value.toLowerCase();
+    const contentDiv = inputElement.nextElementSibling;
+    const textElements = contentDiv.querySelectorAll('.popup-text');
+    textElements.forEach(element => {
+        if (searchValue) {
+            element.innerHTML = highlightText(element.textContent, searchValue);
+        } else {
+            element.innerHTML = element.textContent;
+        }
+    });
+}
+const esgTaxonomies = [
+    {
+        latitude: -6.2088,
+        longitude: 106.8456,
+        name: 'ASEAN Taxonomy version 1',
+        link: 'https://asean.org/wp-content/uploads/2021/11/ASEAN-Taxonomy.pdf',
+        yearinitiated: '2010',
+        mostrecentupdate: '-',
+        institution: 'ASEAN Capital Markets Forum (ACMF), the ASEAN Insurance Regulators Meeting (AIRM), the ASEAN Senior Level Committee on Financial Integration (SLC), and the ASEAN Working Committee on Capital Market Development (WC-CMD)',
+        mandatedinlaworvoluntary: 'Corporations, Financial Service providers, Investment Managers, Asset Owners (Other), Asset Owners (Insurance companies), Asset Owners (Corporate pension or equivalent plans), Asset Owners (non-corporate Pension Funds or equivalent), Voluntary, Taxonomy',
+        commentary: 'This document provides a frame for discussions with official sector and private sector stakeholders to work together on the development of the ASEAN Taxonomy. The ASEAN Taxonomy serves as a reference point to guide capital and funding towards activities that can help promote the systemic transformation needed for the region.',
+        developer: '...',
+        country: 'ASEAN'
+    },
+    {
+        latitude: 4.7110,
+        longitude: -74.02986,
+        name: 'Taxonomía Verde de Colombia',
+        link: 'https://www.taxonomiaverde.gov.co/webcenter/portal/TaxonomaVerde',
+        yearinitiated: '13 April 2022',
+        mostrecentupdate: 'Updated',
+        institution: '...',
+        mandatedinlaworvoluntary: 'The taxonomy is voluntary and has no legal status.  However, there are regulations in place to support its implementation, although these do not impose specific disclosure obligations.  The SFC has issued external circulars (or rules0 that encourage the use of the taxonomy in labelling of green bonds, ESG portfolio labelling and voluntary labelling of pension fund). SFC’s Centro de Estudios Regulatorios (cerlatam.com)',
+        developer: 'Developed by the Government institutions – The Colombian Superintendency of Finance (SFC), the Ministry of finance (MHCP), The National Planning Department (DNP), the Department of Statistics of Colombia (DANE) and the Ministry of Environment and Sustainable Development (MADS) oversaw the taxonomy development process.',
+        objective: 'The Colombian Green Taxonomy defined a set of 5 principles that will guide further development and updates. The main objective is to make a substantial contribute to climate change mitigation (1), followed by climate change adaptation (2), ecosystem and (3) biodiversity conservation and water management, soil management, (4) circular economy and  pollution prevention and control.  This is broadly similar to the EU taxonomy (even in order of priority) although slightly different wording is used however, soil management is specifically singled out in the Colombian taxonomy which is not the case in the EU taxonomy and comes before the circular economy and pollution prevention and control. <br> In the sectors and activities selected, the taxonomy must also comply with the assessment of DNSH to other environmental including adaptation objectives, as well as ensure compliance with the minimum safeguard requirements. <br> 6 principles will guide the SFC’s updates. <br> Principle 1 – align with high-level environmental goals and priorities for Colombia <br> Principle 2 – define eligibility criteria and compliance requirements for each asset and/or activity. <br> Principle 3 – include environmental laws, norms, regulations, plans and programs. <br> Principle 4 – reference, when necessary practices or standards from environmental certification systems. <br> Principle 5 - align economic activities with international standard industrial codes. <br> Principle 6 – study and analyse international taxonomies, including the EU taxonomy for interoperability.',
+        linkpolicyobjectives: 'Paris Agreement: Yes <br> Regional Framework: Yes (TBC) <br> National Strategies:',
+        sectorscovered: 'Sectors: Construction, Energy, Transport, Water supply and treatment, Waste management emissions capture, Manufacturing, Information and communication. <br> <br> Description: The Colombian taxonomy covers 7 sectors, 47 activities/assets (excluding the AFOLU sector) and 11 further activities that derive from three land use sectors which have environmental objectives other than climate change mitigation.  On this basis, the Colombian Green Taxonomy includes ten sectors with 58 activities.  The EU taxonomy covers nine economic sectors and 94 activities and assets. However, it is important to note that the three sectors of Forestry, Agriculture and Livestock are particularly important as they contribute to 59 % of the country’s GHG emissions. Differences also arise in the fact that the Colombian Green Taxonomy consolidates some activities in some areas.',
+        commentary: '...',
+        country: 'Colombia'
+    }
+    // Add more taxonomies here
+];
+
+function featureToGeoJSON(taxonomy) {
+    return {
+        'type': 'Feature',
+        'properties': {
+            'name': taxonomy.name,
+            'link': taxonomy.link
+        },
+        'geometry': {
+            'type': 'Point',
+            'coordinates': [taxonomy.longitude, taxonomy.latitude]
+        }
+    };
+}
+// ... (other code)
+
+const popup = new mapboxgl.Popup({
+    closeButton: false,
+    closeOnClick: true,
+    className: 'custom-popup' // Add this classf
+});
+
+map.on('click', 'taxonomy-markers', (e) => {
+    const taxonomyName = e.features[0].properties.name;
+    const taxonomy = esgTaxonomies.find(item => item.name === taxonomyName);
+    if (taxonomy) {
+        const popupContent = document.createElement('div');
+        popupContent.innerHTML = `
+            <div class="popup-flex-container">
+                <input type="text" onkeyup="filterPopupContent(this)" placeholder="Search...">
+                <div class="popup-content-details">
+                    <strong>Country:</strong> <span class="popup-text">${taxonomy.country}</span><br><br>
+                    <strong>Year Initiated:</strong> <span class="popup-text">${taxonomy.yearinitiated}</span><br><br>
+                    <strong>Most Recent Update:</strong> <span class="popup-text">${taxonomy.mostrecentupdate}</span><br><br>
+                    <div class="collapsible">
+                        <div class="collapsible-header">
+                            <span>Mandated in Law or Voluntary</span>
+                            <span class="collapsible-arrow">&#9660;</span>
+                        </div>
+                        <div class="collapsible-content">
+                            <p>${taxonomy.mandatedinlaworvoluntary}</p>
+                        </div>
+                    </div>
+                    <div class="collapsible">
+                        <div class="collapsible-header">
+                            <span>Developer</span>
+                            <span class="collapsible-arrow">&#9660;</span>
+                        </div>
+                        <div class="collapsible-content">
+                            <p>${taxonomy.developer}</p>
+                        </div>
+                    </div>
+                    <div class="collapsible">
+                        <div class="collapsible-header">
+                            <span>Objective</span>
+                            <span class="collapsible-arrow">&#9660;</span>
+                        </div>
+                        <div class="collapsible-content">
+                            <p>${taxonomy.objective}</p>
+                        </div>
+                    </div>
+                    <div class="collapsible">
+                        <div class="collapsible-header">
+                            <span>Link Policy Objectives</span>
+                            <span class="collapsible-arrow">&#9660;</span>
+                        </div>
+                        <div class="collapsible-content">
+                            <p>${taxonomy.linkpolicyobjectives}</p>
+                        </div>
+                    </div>
+                    <div class="collapsible">
+                        <div class="collapsible-header">
+                            <span>Sectors Covered</span>
+                            <span class="collapsible-arrow">&#9660;</span>
+                        </div>
+                        <div class="collapsible-content">
+                            <p>${taxonomy.sectorscovered}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        popup.setLngLat(e.lngLat)
+            .setDOMContent(popupContent)
+            .addTo(map);
+        e.preventDefault();
+
+        setTimeout(() => {
+            popupContent.scrollTop = 0;
+        }, 100);
+
+        document.querySelectorAll('.collapsible-header').forEach(header => {
+            header.addEventListener('click', function() {
+                this.nextElementSibling.style.display = 
+                    this.nextElementSibling.style.display === 'block' ? 'none' : 'block';
+                this.querySelector('.collapsible-arrow').textContent = 
+                    this.nextElementSibling.style.display === 'block' ? '▼' : '►';
+            });
+        });
+    }
+});
+
+
+map.on('load', () => {
+    map.addSource('esgTaxonomies', {
+        'type': 'geojson',
+        'data': {
+            'type': 'FeatureCollection',
+            'features': esgTaxonomies.map(taxonomy => featureToGeoJSON(taxonomy))
+        }
+    });
+    map.addLayer({
+        'id': 'taxonomy-markers',
+        'type': 'circle',
+        'source': 'esgTaxonomies',
+        'paint': {
+            'circle-color': 'green',
+            'circle-radius': 10,
+            'circle-stroke-width': 2,
+            'circle-stroke-color': 'white'
+        }
+    });
+    
+    // Only keep one definition of filterPopupContent function
+    function filterPopupContent(inputElement) {
+        const searchValue = inputElement.value.toLowerCase();
+        const contentDiv = inputElement.nextElementSibling;
+        const textElements = contentDiv.querySelectorAll('.popup-text');
+        textElements.forEach(element => {
+            if (searchValue) {
+                element.innerHTML = highlightText(element.textContent, searchValue);
+            } else {
+                element.innerHTML = element.textContent;
+            }
+        });
+    }
+    
+    map.on('movestart', () => {
+        map.setFilter('taxonomy-markers', ['has', 'name', false]);
+    });
+    map.on('moveend', () => {
+        const features = map.queryRenderedFeatures({ layers: ['taxonomy-markers'] });
+        if (features) {
+            renderListings(features);
+        }
+    });
+});
+</script>
