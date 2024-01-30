@@ -17,7 +17,7 @@
     }
     .map-overlay {
         position: absolute;
-        width: 23.85%;
+        width: 25%;
         top: 0;
         bottom: 0;
         left: 0;
@@ -133,93 +133,12 @@
         float: right;
     }
 
-    #filter-dropdown {
-        font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
-        font-weight: bold;
-        margin: 10px;
-        padding: 5px;
-        width: calc(100% - 20px);
-    }
-
-    #results-container {
-        margin: 10px;
-        padding: 5px;
-        height: calc(100% - 50px); /* Adjust based on available space */
-        overflow-y: auto;
-    }
-
-    .result-item {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 5px;
-    }
-
-    .country {
-        font-weight: bold;
-    }
-
-    .map-overlay {
-        background-color: #fff; /* Match popup background */
-        font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
-        border-left: 1px solid #ddd; /* Existing left border */
-        border-right: 1px solid #ddd; /* Add right border */
-        padding: 10px;
-    }
-
-    #filter-dropdown, #results-container {
-        background-color: #efefef; /* Subtle background color */
-        border-radius: 3px; /* Rounded corners like in popup */
-        box-shadow: 0 1px 5px rgba(0,0,0,0.2); /* Shadow for depth, similar to popup */
-        margin: 10px;
-        padding: 1px;
-        width: calc(100% - 23px); /* Full width with padding */
-    }
-
-    .result-item {
-        background-color: #f9f9f9; /* Light background for items */
-        border-bottom: 1px solid #eaeaea; /* Separator between items */
-        padding: 5px;
-        margin-bottom: 5px; /* Space between items */
-    }
-
-    .country, .detail {
-        padding: 2px 5px; /* Padding for text */
-    }
-
-    .collapsible-header, .collapsible-content {
-        background-color: #f9f9f9; /* Consistent background with result items */
-        border-color: #eaeaea; /* Light border color */
-    }
-
 </style>
 </head>
 <body>
-
 <div class="map-overlay">
-    <select id="filter-dropdown">
-        <option value="">Select a Category</option>
-        <option value="yearinitiated">Year Initiated</option>
-        <option value="link">Link</option>
-        <option value="mandatedinlaworvoluntary">Mandated in Law or Voluntary</option>
-        <option value="developer">Developer</option>
-        <option value="objective">Objective</option>
-        <option value="linkpolicyobjectives">Link Policy Obbjectives</option>
-        <option value="sectorscovered">Sectors Covered</option>
-        <option value="approachtoeligibility">Approach to Eligibility</option>
-        <option value="purpose">Purpose</option>
-        <option value="DonosignificantharmDNHS">Do No Significant Harm (DNHS)</option>
-        <option value="Additionalguidance">Additional guidance</option>
-        <option value="otherusefuldocuments">Other useful documents</option>
-        <option value="mostrecentupdate">Most Recent Update</option>
-        <option value="Intendedtobeinteroperable">Intended to be interoperable</option>
-        <option value="Biodiversity">Biodiversity</option>
-        <option value="MemberofIPFS">Member of the IPFS</option>
-        <option value="Socialobjectivessafeguards">Social Objectives / Safeguards</option>
-        <option value="Sectorclassification">Sector Classification</option>
-    </select>
-    <div id="results-container"></div>
-</div>        
-
+    
+</div>
 <div id="map"></div>
 
 <script>
@@ -233,6 +152,8 @@ const map = new mapboxgl.Map({
     zoom: 2
 });
 
+const filterEl = document.getElementById('feature-filter');
+const listingEl = document.getElementById('feature-listing');
 function renderListings(features) {
     listingEl.innerHTML = '';
     if (features.length) {
@@ -240,35 +161,15 @@ function renderListings(features) {
         for (const feature of features) {
             const listItem = document.createElement('li');
             const itemLink = document.createElement('a');
-            const taxonomy = esgTaxonomies.find(taxonomy => taxonomy.name === feature.properties.name);
-
-            itemLink.href = taxonomy.link; // Use the link from the taxonomy data
+            itemLink.href = feature.properties.link;
             itemLink.target = '_blank';
-            itemLink.textContent = taxonomy.country; // Display the country
-
+            itemLink.textContent = esgTaxonomies.find(taxonomy => taxonomy.name === feature.properties.name).country;
             listItem.appendChild(itemLink);  
             listContainer.appendChild(listItem);
         }
         listingEl.appendChild(listContainer);
     }
 }
-
-document.getElementById('filter-dropdown').addEventListener('change', function() {
-    const selectedCategory = this.value;
-    const resultsContainer = document.getElementById('results-container');
-    resultsContainer.innerHTML = '';
-
-    esgTaxonomies.forEach(taxonomy => {
-        if (taxonomy[selectedCategory]) {
-            const resultItem = document.createElement('div');
-            resultItem.classList.add('result-item');
-            resultItem.innerHTML = `<span class="country">${taxonomy.country}:</span> <span class="detail">${taxonomy[selectedCategory]}</span>`;
-            resultsContainer.appendChild(resultItem);
-        }
-    });
-});
-
-
 
 function normalize(string) {
     return string.trim().toLowerCase();
@@ -665,7 +566,7 @@ map.on('click', 'taxonomy-markers', (e) => {
                 <div class="popup-content-details">
                     <strong>Country:</strong> <span class="popup-text">${taxonomy.country}</span><br><br>
                     <strong>Year Initiated:</strong> <span class="popup-text">${taxonomy.yearinitiated}</span><br><br>
-                    <strong>Link:</strong> <a href="${taxonomy.link}" target="_blank" class="popup-text">${taxonomy.link}</a><br><br>
+                    <strong>Link:</strong> <span class="popup-text">${taxonomy.link}</span><br><br>
                     <div class="collapsible">
                         <div class="collapsible-header">
                             <span>Mandated in Law or Voluntary</span>
