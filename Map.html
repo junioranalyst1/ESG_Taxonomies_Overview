@@ -1,665 +1,927 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-<meta charset="utf-8">
-<title>Filter Taxonomies within Map View</title>
-<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
-<link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
-<script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
-<style>
-    body { margin: 0; padding: 0; }
-    #map {
-        position: absolute;
-        left: 25%;
-        top: 0;
-        bottom: 0;
-        width: 75%;
-    }
-    .map-overlay {
-        position: absolute;
-        width: 23.85%;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
-        background-color: #efefef;
-    }
-    .map-overlay input {
-        display: block;
-        border: none;
-        width: 100%;
-        border-radius: 3px;
-        padding: 10px;
-        margin: 0;
-        box-sizing: border-box;
-    }
-    .map-overlay .listing {
-        overflow: auto;
-        max-height: 100%;
-    }
-    .map-overlay .listing a {
-        display: block;
-        padding: 5px 10px;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-        color: #404;
-        text-decoration: none;
-    }
-    .map-overlay .listing a:last-child {
-        border: none;
-    }
-    .map-overlay .listing a:hover {
-        background: #f0f0f0;
-    }
-    .mapboxgl-popup-content {
-        padding: 10px !important;
-        scroll-behavior: auto; 
-    }
-    .mapboxgl-popup {
-        max-width: 400px !important;
-        scroll-behavior: auto;
-    }
-    .popup-flex-container {
-        display: flex;
-        flex-direction: column;
-        height: 400px; /* or whatever fixed height you want */
-        position: relative;
-        scroll-behavior: auto;
-    }
+    <meta charset="utf-8">
+    <title>Filter Taxonomies within Map View</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
 
-    .popup-flex-container input[type="text"] {
-        flex: 0 0 auto;
-        width: 100%;
-        padding: 5px;
-        margin-bottom: 10px;
-        box-sizing: border-box;
-        scroll-behavior: auto;
-    }
-    .popup-content-details {
-        flex: 1 1 auto;
-        overflow: scroll;
-        height: 250px; /* or whatever value that works for you */
-        scroll-behavior: auto;
-    }
+        #map {
+            position: absolute;
+            left: 25%;
+            top: 0;
+            bottom: 0;
+            width: 75%;
+        }
 
-    .highlighted {
-        background-color: yellow;
-    }
+        .map-overlay {
+            position: absolute;
+            width: 23.85%;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            background-color: #efefef;
+            z-index: 1;
+        }
 
-    .feature-filter {
-        padding: 10px;
-    }
+        .map-overlay input {
+            display: block;
+            border: none;
+            width: 100%;
+            border-radius: 3px;
+            padding: 10px;
+            margin: 0;
+            box-sizing: border-box;
+        }
 
-    #feature-listing {
-        overflow: auto;
-        max-height: calc(100% - 50px);  /* Adjusts for the height of the search input */
-    }
+        .map-overlay .listing {
+            overflow: auto;
+            max-height: 100%;
+        }
 
-    .custom-popup {
-        max-width: 300px !important;
-        /* Set a fixed height and make content scrollable */
-        max-height: 500px;
-        overflow-y: hidden;
-        scroll-behavior: auto;
-        text-align: left;
-    }
+        .map-overlay .listing a {
+            display: block;
+            padding: 5px 10px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            color: #404;
+            text-decoration: none;
+        }
 
-    .custom-popup .your-inner-container {
-        max-height: 400px;
-        overflow-y: scroll;
-        scroll-behavior: auto;
-        text-align: left;
-    }
+        .map-overlay .listing a:last-child {
+            border: none;
+        }
 
-    .collapsible {
-        margin-bottom: 5px;
-    }
+        .map-overlay .listing a:hover {
+            background: #f0f0f0;
+        }
 
-    .collapsible-header {
-        cursor: pointer;
-        padding: 10px;
-        border: 1px solid #ddd;
-        font-weight: bold;
-    }
+        .mapboxgl-popup-content {
+            padding: 10px !important;
+            scroll-behavior: auto;
+        }
 
-    .collapsible-content {
-        padding: 0 10px;
-        display: none;
-        overflow: hidden;
-        border: 1px solid #ddd;
-        border-top: none;
-    }
+        .mapboxgl-popup {
+            max-width: 400px !important;
+            scroll-behavior: auto;
+        }
 
-    .collapsible-arrow {
-        float: right;
-    }
+        @media only screen and (max-width: 600px) {
 
-    #filter-dropdown {
-        font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
-        font-weight: bold;
-        margin: 10px;
-        padding: 5px;
-        width: calc(100% - 20px);
-    }
+            /* Adjust max-width as needed */
+            .mapboxgl-popup {
+                display: flex;
+                flex-direction: column;
+                width: 175px;
+                /* Set a fixed width or max-width as needed */
+                max-height: 180px !important;
+                /* Set a max-height to make it smaller */
+                overflow: auto;
+                /* Add scrolling if content is larger than the pop-up */
+            }
 
-    #results-container {
-        margin: 10px;
-        padding: 5px;
-        height: calc(100% - 50px); /* Adjust based on available space */
-        overflow-y: auto;
-    }
+            .mapboxgl-popup-content,
+            .popup-content-details {
+                max-width: 100%;
+                /* Ensure content does not exceed the container width */
+                overflow-x: hidden;
+                /* Hide horizontal overflow */
+                word-wrap: break-word;
+                /* Ensure long words do not cause overflow */
+            }
 
-    .result-item {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 5px;
-    }
+            /* Additionally, if there are specific elements within your popups that cause horizontal scrolling, target them with a similar approach */
+            .custom-popup-element {
+                max-width: 100%;
+                overflow-x: hidden;
+            }
 
-    .country {
-        font-weight: bold;
-    }
 
-    .map-overlay {
-        background-color: #fff; /* Match popup background */
-        font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
-        border-left: 1px solid #ddd; /* Existing left border */
-        border-right: 1px solid #ddd; /* Add right border */
-        padding: 10px;
-    }
+            /* Any other specific adjustments for mobile */
+        }
 
-    #filter-dropdown, #results-container {
-        background-color: #efefef; /* Subtle background color */
-        border-radius: 3px; /* Rounded corners like in popup */
-        box-shadow: 0 1px 5px rgba(0,0,0,0.2); /* Shadow for depth, similar to popup */
-        margin: 10px;
-        padding: 1px;
-        width: calc(100% - 23px); /* Full width with padding */
-    }
 
-    .result-item {
-        background-color: #f9f9f9; /* Light background for items */
-        border-bottom: 1px solid #eaeaea; /* Separator between items */
-        padding: 5px;
-        margin-bottom: 5px; /* Space between items */
-    }
+        .popup-flex-container {
+            display: flex;
+            flex-direction: column;
+            height: 400px;
+            /* or whatever fixed height you want */
+            position: relative;
+            scroll-behavior: auto;
+        }
 
-    .country, .detail {
-        padding: 2px 5px; /* Padding for text */
-    }
+        .popup-flex-container input[type="text"] {
+            flex: 0 0 auto;
+            width: 100%;
+            padding: 5px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+            scroll-behavior: auto;
+        }
 
-    .collapsible-header, .collapsible-content {
-        background-color: #f9f9f9; /* Consistent background with result items */
-        border-color: #eaeaea; /* Light border color */
-    }
+        .popup-content-details {
+            flex: 1 1 auto;
+            overflow: scroll;
+            height: 250px;
+            /* or whatever value that works for you */
+            scroll-behavior: auto;
+        }
 
-</style>
+        .highlighted {
+            background-color: yellow;
+        }
+
+        .feature-filter {
+            padding: 10px;
+        }
+
+        #feature-listing {
+            overflow: auto;
+            max-height: calc(100% - 50px);
+            /* Adjusts for the height of the search input */
+        }
+
+        .custom-popup {
+            max-width: 300px !important;
+            /* Set a fixed height and make content scrollable */
+            max-height: 500px;
+            overflow-y: hidden;
+            scroll-behavior: auto;
+            text-align: left;
+        }
+
+        .custom-popup .your-inner-container {
+            max-height: 400px;
+            overflow-y: scroll;
+            scroll-behavior: auto;
+            text-align: left;
+        }
+
+        .collapsible {
+            margin-bottom: 5px;
+        }
+
+        .collapsible-header {
+            cursor: pointer;
+            padding: 10px;
+            border: 1px solid #ddd;
+            font-weight: bold;
+        }
+
+        .collapsible-content {
+            padding: 0 10px;
+            display: none;
+            overflow: hidden;
+            border: 1px solid #ddd;
+            border-top: none;
+        }
+
+        .collapsible-arrow {
+            float: right;
+        }
+
+        #filter-dropdown {
+            font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            font-weight: bold;
+            margin: 10px;
+            padding: 5px;
+            width: calc(100% - 20px);
+        }
+
+        #results-container {
+            margin: 10px;
+            padding: 5px;
+            height: calc(100% - 50px);
+            /* Adjust based on available space */
+            overflow-y: auto;
+            text-align: justify;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: flex-start;
+            padding: 5px;
+            /* Consistent padding on all sides */
+            border-bottom: 1px solid #eaeaea;
+            /* Consistent border for all items */
+            background-color: #f9f9f9;
+            /* Consistent background for all items */
+            margin-bottom: 5px;
+            /* Consistent margin for all items */
+        }
+
+        .result-item a {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: normal;
+            display: inline-block;
+            max-width: calc(100% - 10px);
+            /* Adjust max-width considering the padding */
+            margin: 0 5px;
+            /* Add margin to the links if needed */
+        }
+
+        .country-name {
+            /* Styling for the country name */
+            font-weight: bold;
+            /* example style */
+            margin-right: 8px;
+            /* Adjust the value as needed */
+        }
+
+        .map-overlay {
+            background-color: #fff;
+            /* Match popup background */
+            font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            border-left: 1px solid #ddd;
+            /* Existing left border */
+            border-right: 1px solid #ddd;
+            /* Add right border */
+            padding: 10px;
+        }
+
+        .drag-handle {
+            background-color: #ccc;
+            /* Visible handle color */
+            cursor: ew-resize;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 23.85%;
+            /* This should match the initial width of your sidebar */
+            width: 20px;
+            /* Adjust the thickness of the handle here */
+            z-index: 10;
+            /* Ensure it's above other elements */
+            border-left: 17px solid white;
+            /* Adds a left border */
+        }
+
+        .drag-handle::after {
+            content: '⋮⋮';
+            /* Vertical ellipsis or another symbol for the handle */
+            display: block;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 20px;
+            color: #666;
+            line-height: 1;
+        }
+
+
+        #filter-dropdown,
+        #results-container {
+            background-color: #efefef;
+            /* Subtle background color */
+            border-radius: 3px;
+            /* Rounded corners like in popup */
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+            /* Shadow for depth, similar to popup */
+            margin: 10px;
+            padding: 1px;
+            width: calc(100% - 23px);
+            /* Full width with padding */
+        }
+
+        .country-details {
+            text-align: justify;
+            flex-grow: 1;
+            overflow-wrap: break-word;
+            /* Allows unbreakable words to be broken */
+            word-wrap: break-word;
+            /* Ensures that words can be broken and wrapped onto the next line */
+            word-break: break-word;
+            /* Use this if you want to ensure breaking at the end of the line for long words or URLs */
+            /* This will make the details fill up the remaining space */
+            /* Adjust the width as necessary */
+        }
+
+        .collapsible-header,
+        .collapsible-content {
+            background-color: #f9f9f9;
+            /* Consistent background with result items */
+            border-color: #eaeaea;
+            /* Light border color */
+        }
+
+        .objectives ul {
+            list-style-type: disc;
+            /* This adds the bullet point */
+            padding-left: 20px;
+            /* This indents the list */
+        }
+
+        .objectives li {
+            margin-bottom: 10px;
+            /* This adds space between list items */
+            text-align: left;
+            /* Ensures text is aligned to the left */
+        }
+    </style>
 </head>
+
 <body>
 
-<div class="map-overlay">
-    <select id="filter-dropdown">
-        <option value="">Select a Category</option>
-        <option value="yearinitiated">Year Initiated</option>
-        <option value="link">Link</option>
-        <option value="mandatedinlaworvoluntary">Mandated in Law or Voluntary</option>
-        <option value="developer">Developer</option>
-        <option value="objective">Objective</option>
-        <option value="linkpolicyobjectives">Link Policy Obbjectives</option>
-        <option value="sectorscovered">Sectors Covered</option>
-        <option value="approachtoeligibility">Approach to Eligibility</option>
-        <option value="purpose">Purpose</option>
-        <option value="DonosignificantharmDNHS">Do No Significant Harm (DNHS)</option>
-        <option value="Additionalguidance">Additional guidance</option>
-        <option value="otherusefuldocuments">Other useful documents</option>
-        <option value="mostrecentupdate">Most Recent Update</option>
-        <option value="Intendedtobeinteroperable">Intended to be interoperable</option>
-        <option value="Biodiversity">Biodiversity</option>
-        <option value="MemberofIPFS">Member of the IPFS</option>
-        <option value="Socialobjectivessafeguards">Social Objectives / Safeguards</option>
-        <option value="Sectorclassification">Sector Classification</option>
-    </select>
-    <div id="results-container"></div>
-</div>        
+    <div class="map-overlay" id="sidebar">
+        <select id="filter-dropdown">
+            <option value="">Select a Category</option>
+            <option value="yearinitiated">Year Initiated</option>
+            <option value="link">Link</option>
+            <option value="mandatedinlaworvoluntary">Mandated in Law or Voluntary</option>
+            <option value="developer">Developer</option>
+            <option value="objective">Objective</option>
+            <option value="linkpolicyobjectives">Link Policy Obbjectives</option>
+            <option value="sectorscovered">Sectors Covered</option>
+            <option value="approachtoeligibility">Approach to Eligibility</option>
+            <option value="purpose">Purpose</option>
+            <option value="DonosignificantharmDNHS">Do No Significant Harm (DNHS)</option>
+            <option value="Additionalguidance">Additional guidance</option>
+            <option value="otherusefuldocuments">Other useful documents</option>
+            <option value="mostrecentupdate">Most Recent Update</option>
+            <option value="Intendedtobeinteroperable">Intended to be interoperable</option>
+            <option value="Biodiversity">Biodiversity</option>
+            <option value="MemberofIPFS">Member of the IPFS</option>
+            <option value="Socialobjectivessafeguards">Social Objectives / Safeguards</option>
+            <option value="Sectorclassification">Sector Classification</option>
+        </select>
+        <div id="results-container"></div>
+    </div>
 
-<div id="map"></div>
+    <div id="drag-handle" class="drag-handle"></div>
 
-<script>
-mapboxgl.accessToken = 'pk.eyJ1IjoianVuaW9yYW5hbHlzdDEiLCJhIjoiY2xranA1eHV5MHlpczNja2dieDlkZzJiciJ9.CN5Qa40PM2IMpwlyBAFTVA';
-const map = new mapboxgl.Map({
-    container: 'map',
-    style: 'mapbox://styles/mapbox/streets-v12',
-    center: [0, 0],
-    maxZoom: 5,
-    minZoom: 1,
-    zoom: 2
-});
+    <div id="map"></div>
 
-function renderListings(features) {
-    listingEl.innerHTML = '';
-    if (features.length) {
-        const listContainer = document.createElement('ul');
-        for (const feature of features) {
-            const listItem = document.createElement('li');
-            const itemLink = document.createElement('a');
-            const taxonomy = esgTaxonomies.find(taxonomy => taxonomy.name === feature.properties.name);
+    <script>
 
-            itemLink.href = taxonomy.link; // Use the link from the taxonomy data
-            itemLink.target = '_blank';
-            itemLink.textContent = taxonomy.country; // Display the country
 
-            listItem.appendChild(itemLink);  
-            listContainer.appendChild(listItem);
+        mapboxgl.accessToken = 'pk.eyJ1IjoianVuaW9yYW5hbHlzdDEiLCJhIjoiY2xranA1eHV5MHlpczNja2dieDlkZzJiciJ9.CN5Qa40PM2IMpwlyBAFTVA';
+
+        const isMobile = window.innerWidth < 600;
+
+
+
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v12',
+            center: [0, 0],
+            maxZoom: 5,
+            minZoom: -1,
+            zoom: isMobile ? -1 : 2 // Use minZoom for mobile, otherwise use 2
+
+        });
+
+        function renderListings(features) {
+            listingEl.innerHTML = '';
+            if (features.length) {
+                const listContainer = document.createElement('ul');
+                for (const feature of features) {
+                    const listItem = document.createElement('li');
+                    const itemLink = document.createElement('a');
+                    const taxonomy = esgTaxonomies.find(taxonomy => taxonomy.name === feature.properties.name);
+
+                    itemLink.href = taxonomy.link; // Use the link from the taxonomy data
+                    itemLink.target = '_blank';
+                    itemLink.textContent = taxonomy.country; // Display the country
+
+                    listItem.appendChild(itemLink);
+                    listContainer.appendChild(listItem);
+                }
+                listingEl.appendChild(listContainer);
+            }
         }
-        listingEl.appendChild(listContainer);
-    }
-}
 
-document.getElementById('filter-dropdown').addEventListener('change', function() {
-    const selectedCategory = this.value;
-    const resultsContainer = document.getElementById('results-container');
-    resultsContainer.innerHTML = '';
+        document.getElementById('filter-dropdown').addEventListener('change', function () {
+            const selectedCategory = this.value;
+            const resultsContainer = document.getElementById('results-container');
+            resultsContainer.innerHTML = '';
 
-    esgTaxonomies.forEach(taxonomy => {
-        if (taxonomy[selectedCategory]) {
-            const resultItem = document.createElement('div');
-            resultItem.classList.add('result-item');
-            resultItem.innerHTML = `<span class="country">${taxonomy.country}:</span> <span class="detail">${taxonomy[selectedCategory]}</span>`;
-            resultsContainer.appendChild(resultItem);
+            esgTaxonomies.forEach(taxonomy => {
+                if (taxonomy[selectedCategory]) {
+                    const resultItem = document.createElement('div');
+                    resultItem.classList.add('result-item');
+
+                    const countryNameSpan = document.createElement('span');
+                    countryNameSpan.classList.add('country-name');
+                    countryNameSpan.textContent = taxonomy.country + ':';
+
+                    const countryDetailsSpan = document.createElement('span');
+                    countryDetailsSpan.classList.add('country-details');
+                    countryDetailsSpan.innerHTML = taxonomy[selectedCategory];
+
+                    resultItem.appendChild(countryNameSpan);
+                    resultItem.appendChild(countryDetailsSpan);
+
+                    resultsContainer.appendChild(resultItem);
+                }
+            });
+        });
+
+        const dragHandle = document.getElementById('drag-handle');
+        const sidebar = document.getElementById('sidebar');
+        let isDragging = false;
+
+
+
+        // ... (rest of your existing script before the drag functionality)
+
+        // Function to handle the dragging for both touch and mouse events
+        function handleDrag(event) {
+            // Determine the type of event
+            const xPosition = event.type.includes('touch') ? event.touches[0].clientX : event.clientX;
+
+            // Update the layout based on the event's X position
+            updateLayout(xPosition);
         }
-    });
-});
 
+        // Add this function to update sidebar and map layout
+        function updateLayout(sidebarWidth) {
+            const sidebar = document.getElementById('sidebar');
+            const mapContainer = document.getElementById('map');
 
+            // Update sidebar width
+            sidebar.style.width = `${sidebarWidth}px`;
 
-function normalize(string) {
-    return string.trim().toLowerCase();
-}
-function featureToGeoJSON(taxonomy) {
-    return {
-        'type': 'Feature',
-        'properties': {
-            'name': taxonomy.name,
-            'link': taxonomy.link
-        },
-        'geometry': {
-            'type': 'Point',
-            'coordinates': [taxonomy.longitude, taxonomy.latitude]
+            // Update drag handle position
+            const dragHandle = document.getElementById('drag-handle');
+            dragHandle.style.left = `${sidebarWidth}px`;
+
+            // Update map container left margin
+            mapContainer.style.left = `${sidebarWidth}px`;
+
+            // Ensure the map adjusts to the new layout
+            map.resize(); // Adjust the map size
         }
-    };
-}
-function highlightText(content, term) {
-    const highlightStartTag = "<span class='highlighted'>";
-    const highlightEndTag = "</span>";
-    const newText = content.replace(new RegExp(`(${term})`, 'ig'), `${highlightStartTag}$1${highlightEndTag}`);
-    return newText;
-}
-function filterPopupContent(inputElement) {
-    const searchValue = inputElement.value.toLowerCase();
-    const contentDiv = inputElement.nextElementSibling;
-    const textElements = contentDiv.querySelectorAll('.popup-text, .collapsible-content');
-    textElements.forEach(element => {
-        if (searchValue) {
-            element.innerHTML = highlightText(element.textContent, searchValue);
-        } else {
-            element.innerHTML = element.textContent;
+
+
+
+
+        // Touch event listeners START
+        document.getElementById('drag-handle').addEventListener('touchstart', function (event) {
+            isDragging = true;
+            // Prevent the default touch behavior like scrolling
+            event.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('touchmove', function (event) {
+            if (isDragging) {
+                handleDrag(event); // Call the handle drag function
+                event.preventDefault(); // Prevent scrolling during drag
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchend', function () {
+            isDragging = false;
+        });
+        // Touch event listeners END
+
+
+        dragHandle.addEventListener('mousedown', function (e) {
+            isDragging = true;
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+            e.preventDefault(); // Prevent text selection during drag
+            map.resize();
+
+        });
+
+        function onMouseUp() {
+            isDragging = false;
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+
+            // Assuming your map instance is named 'map'
+            map.resize(); // This recalculates the map size
         }
-    });
-}
-const esgTaxonomies = [
-    {
-        latitude: 56.1304,
-        longitude: -106.3468,
-        name: 'Transition Finance Taxonomy',
-        link: 'https://www.csagroup.org/news/defining-transition-finance-in-canada/',
-        yearinitiated: '2019',
-        mostrecentupdate: 'This taxonomy aims to be “internationally-aligned” ie, can operate independently or be compatible with other international taxonomies that cover areas not covered. The EU taxonomy was a jumping off point for its creation.  It encompasses not only a green definition but a “broader mapping of transition and resiliency-linked economic activities and asset classes. It was intended to be ‘granular enough to avoid ambiguity, while flexible enough to evolve with policy, demand and innovation”. <br> <br> It is intended to work either independently, or with other countries with similar resource endowments, to develop supplemental coverage for industry transition activities that are essential to Canada but not captured under current criteria. <br> <br>Phase 1 would see the SFAC publishing a short-form taxonomy covering priority sectors and activities by mid-2023 (this deadline appears to have been missed), as well as laying the groundwork for the implementation of the taxonomy for the long term, including governance, funding and strategic planning. Phase 2 would involve the full implementation of the Taxonomy initiative and publishing a substantially more complete and detailed taxonomy by end-2025 at the latest.',
-        mandatedinlaworvoluntary: 'No - Due to the voluntary nature of the taxonomy, the governance model proposed does not antcipate a compliance review and enforcement function, although the report notes that its use may ultimately intersect with federal and provincials laws (e.g., issuing financial instruments under the taxonomy would be subject to provincial securities laws that are administered by provincial securities regulators, which play a compliance and enforcement function).',
-        developer: 'The journey to develop a Canadian Taxonomy has not been a linear process. <br> <br> In 2019, The Canadian Expert Panel on Sustainable Finance recommended to the Canadian Government that the creation of a market-based tool to mobilise capital to transition to a net zero greenhouse gas (GHG) emissions economy. <br> <br> Reacting to this, the Canadian financial community and eight industry sectors, including forestry, agriculture, mineral mining, utilities, steel, aluminium, cement, and energy, came together to collaborate on a foundational transition guidance document for the marketplace. The process was facilitated by CSA Group and resulted in the development of a volunteer committee on Transition and Sustainable Finance. The committee worked together over a two-year period, but there were fundamental differences of opinion among committee members, and consensus on the draft foundations document could not be achieved. The CSA Group determined that work of the committee had progressed as far as it could at that time. To determine next steps, CSA Group and the committee intend to work with the Sustainable Finance Action Council (SFAC) and government stakeholders. In May 2021, the Government of Canada launched the Sustainable Finance Action Council (SFAC) to help lead the Canadian financial sector towards integrating sustainable finance into standard industry practice. <br> <br> The SFAC serves as a centre of expertise, partnership, and dialogue on sustainable finance issues in Canada and internationally. It will also help champion the implementation of sustainable finance best practices across the Canadian financial sector and the broader Canadian economy, and support the growth of a well-functioning sustainable finance market in Canada. This will help accelerate movement of private capital in support of the Government of Canada’s climate goals, in particular: <br> <br> • to support the achievement of Canada’s enhanced 2030 target; <br> • to transition to a net-zero emissions economy by 2050; and, <br> • to ensure climate resilience and adaptation throughout Canada. <br> <br> The council’s early emphasis was to focus on enhancing climate-related financial disclosures in Canada’s private and public sector, aligned with the recommendations of the Task Force on Climate-Related Financial Disclosures. The Council also decided to prioritise gender and diversity reporting in a first instance. <br> <br> Three technical expert groups and one working group support the work of the SFAC and are comprised of SFAC organizations as core members, with expertise from industry, academia, civil society, and government incorporated to support progress on workplans. Of the four groups, the taxonomy working group (Lead: Barb Zvan, UPP Investments) was established to outline needs amongst market participants to define green and transition investments and activities within the context of Canada’s capital markets. <br> <br> At the same time as these efforts began, the CSA Group engaged Climate Bonds Initiative to explore the characteristics and approaches of international taxonomies within the Canadian context. It included a review of international taxonomies, focusing on their approaches toward low-carbon transition, along with the application of these approaches to the Canadian economic context. Through this exploration, the challenges and opportunities for the development of a Canadian taxonomy were identified. <br> <br> The report went on to propose and are presented recommendations that could inform a future Canadian transition taxonomy. <br> <br> The future governance proposed consists of a three-tier model: <br> <br> 1. A high-level body that is accountable for the initiative and provides strategic direction and oversight (Tier one); <br> <br> 2.	A technical custodian body with expert and technical staff that develops the standards and technical criteria (Tier two); and <br> <br> 3. Technical advisory groups comprising independent external experts that support the technical work of custodians, as well as forums and due process initiatives to obtain stakeholder feedback on consultation drafts (Tier three).',
-        objective: 'The report suggests the objectives should be as follows: <br> <br> • Prioritise climate mitigation but position the initiative to move quickly into other critical areas, such as climate adaptation and resilience <br> <br> • Develop a versatile taxonomy that can support classifying climate-related financial instruments (e.g., bonds, loans)—as well as other private and public sector use cases <br> <br> • Require issuing companies to commit to issuing net-zero plans, targets and climate disclosure, to ensure the taxonomy is supporting credible transitions <br> <br> • Foster rigorous, scientific-based screening criteria that are reviewed regularly to reflect innovation and climate science <br> <br> • Promote interoperability with major science-based taxonomies globally to foster market confidence and reduce market fragmentation',
-        linkpolicyobjectives: 'Paris Agreement: Yes <br> Regional Framework: - <br> National Strategies: Yes',
-        sectorscovered: 'Not confirmed at this stage (January 2024) <br> <br> The report suggests that in addition to regular reviews, the developers of the taxonomy should consider the merits of a mechanism that would allow for the review of material ad hoc requests from market participants to scope in one-off activities, projects and assets for inclusion in the taxonomy. As it is difficult to set criteria that would cover all intended green and transition activities, a review mechanism would provide discretion to grant ad hoc requests, in keeping with the climate objectives and climate science of the taxonomy.',
-        approachtoeligibility: 'principle-based: YES - The criteria can be set by relying on high-level principles, lists of approved activities, technical screening criteria or a combination. <br> Pass-list approach: - <br> Threshold and criteria: YES <br> Umbrella clauses: TBC <br> Any combination of the above: YES',
-        basedonanothertaxonomy: 'YES',
-        Intendedtobeinteroperable: 'YES',
-        Purpose: 'Green: focus on identifying eligible - YES <br> Transition: supports transition of all existing assets - YES - The criteria and thresholds should require the reporting of standardized metrics and qualitative information, which would establish clear data requirements and support the intra- and inter- industry comparability of taxonomy alignment and post-issuance reporting. <br> Ineligible investments - YES - The criteria can be set by relying on high-level principles, lists of approved activities, technical screening criteria or a combination. The criteria can either be static or dynamic. Dynamic criteria are subject to a regular review process, where the criteria are made more stringent over time to reflect technological advancement and the need for increasing ambition as climate targets draw closer. The report provides an overview of a green and transition finance taxonomy with dynamic criteria. <br> <br> Taken together, the criteria are meant to support a theory of economy-wide change aimed at rapidly expanding green activities, decarbonizing higher-emitting sectors where possible and moving away from economic activities that are inconsistent with global climate objectives and carry significant transition risk. <br> <br> Designing a practical and credible taxonomy for Canada requires drawing boundaries around the types of activities that are consistent with 1.5 °C emissions pathways. These boundaries are important for oil and gas activities given their emissions profile, and they need to be analysed separately, but calibrating them appropriately is a complex undertaking that will require significant technical work and industry engagement in future implementation phases. <br> <br> To be categorized as transition, existing oil and gas projects would need to demonstrate improvements to their emissions intensity by 2030. Eligible projects would therefore need to demonstrate that current and future capital expenditures put them on a track to reduce their emissions intensity such that it complies with the 2030 threshold established via net-zero modeling. Eligible projects would also need to have lifespans that are proportionate to global demand scenarios in representative 1.5°C pathways (recognizing that the runway for gas is likely longer than for oil). Existing oil and gas extraction projects would also need to demonstrate that making the new investment to reduce emissions will not increase the lifespan of their operations',
-        Sectorclassification: '-',
-        DonosignificantharmDNHS: 'YES',
-        Socialobjectivessafeguards: 'Limited reference. The governance includes the need to involve indigenous groups.',
-        Additionalguidance: 'https://www.canada.ca/en/department-finance/programs/financial-sector-policy/sustainable-finance/sustainable-finance-action-council/taxonomy-roadmap-report.html',
-        otherusefuldocuments: '• CE 28, 2020 - Green Bonds <br> • CE 08, 2021 - ESG Integration for Voluntary Pension Funds <br> • CE 31, 2021 – ESG and Climate Disclosure Regulation for Issuers <br> • PCE 2022 - Sustainability Linked Bonds <br> <br> The following report provides a helpful comparison between the EU and Colombian Taxonomy provided by the Climate Bond Institute.',
-        MemberofIPFS: 'YES <br> <br> Latest info from the IPFS: The Canadian Government is examining the advice of SFAC before decide.',
-        Biodiversity: '-',
-        country: 'Canada'
-    },
-    {
-        latitude: 4.7110,
-        longitude: -74.02986,
-        name: 'Taxonomía Verde de Colombia',
-        link: 'https://www.taxonomiaverde.gov.co/webcenter/portal/TaxonomaVerde',
-        yearinitiated: '13 April 2022',
-        mostrecentupdate: '-',
-        mandatedinlaworvoluntary: 'The taxonomy is voluntary and has no legal status.  However, there are regulations in place to support its implementation, although these do not impose specific disclosure obligations.  The SFC has issued external circulars (or rules0 that encourage the use of the taxonomy in labelling of green bonds, ESG portfolio labelling and voluntary labelling of pension fund). SFC’s Centro de Estudios Regulatorios (cerlatam.com)',
-        developer: 'Developed by the Government institutions – The Colombian Superintendency of Finance (SFC), the Ministry of finance (MHCP), The National Planning Department (DNP), the Department of Statistics of Colombia (DANE) and the Ministry of Environment and Sustainable Development (MADS) oversaw the taxonomy development process.',
-        objective: 'The Colombian Green Taxonomy defined a set of 5 principles that will guide further development and updates. The main objective is to make a substantial contribute to climate change mitigation (1), followed by climate change adaptation (2), ecosystem and (3) biodiversity conservation and water management, soil management, (4) circular economy and  pollution prevention and control.  This is broadly similar to the EU taxonomy (even in order of priority) although slightly different wording is used however, soil management is specifically singled out in the Colombian taxonomy which is not the case in the EU taxonomy and comes before the circular economy and pollution prevention and control. <br> In the sectors and activities selected, the taxonomy must also comply with the assessment of DNSH to other environmental including adaptation objectives, as well as ensure compliance with the minimum safeguard requirements. <br> 6 principles will guide the SFC’s updates. <br> Principle 1 – align with high-level environmental goals and priorities for Colombia <br> Principle 2 – define eligibility criteria and compliance requirements for each asset and/or activity. <br> Principle 3 – include environmental laws, norms, regulations, plans and programs. <br> Principle 4 – reference, when necessary practices or standards from environmental certification systems. <br> Principle 5 - align economic activities with international standard industrial codes. <br> Principle 6 – study and analyse international taxonomies, including the EU taxonomy for interoperability.',
-        linkpolicyobjectives: 'Paris Agreement: Yes <br> Regional Framework: Yes (TBC) <br> National Strategies:',
-        sectorscovered: 'Sectors: Construction, Energy, Transport, Water supply and treatment, Waste management emissions capture, Manufacturing, Information and communication. <br> <br> Description: The Colombian taxonomy covers 7 sectors, 47 activities/assets (excluding the AFOLU sector) and 11 further activities that derive from three land use sectors which have environmental objectives other than climate change mitigation.  On this basis, the Colombian Green Taxonomy includes ten sectors with 58 activities.  The EU taxonomy covers nine economic sectors and 94 activities and assets. However, it is important to note that the three sectors of Forestry, Agriculture and Livestock are particularly important as they contribute to 59 % of the country’s GHG emissions. Differences also arise in the fact that the Colombian Green Taxonomy consolidates some activities in some areas.',
-        approachtoeligibility: 'principle-based: YES, Pass-list approach: YES, Threshold: and criteria: YES, Umbrella Clauses, Any combination of the above; <br> <br> Description: Both taxonomies also included enabling sectors that are necessary to achieve decarbonisation (e.g., activity of data-driven climate solutions under the ICT sector). Furthermore, both taxonomies address activities that have a viable transition pathway to achieve the taxonomy ambition over a defined period. These activities have a potential technological pathway for significantly improving their performance with an urgent transition to prevent and avoid negative damage, which is the case for activities in the manufacturing sector such as cement and aluminium manufacturing.',
-        basedonanothertaxonomy: 'The Colombian Green Taxonomy also evaluated other taxonomies and frameworks from the EU and Climate Bonds, and compared them with the national Measurement, Reporting, and Verification (MRV) system to identify the list of sectors and activities.',
-        Intendedtobeinteroperable: 'YES',
-        Purpose: 'Green: focus on identifying eligible - YES <br> Transition: supports transition of all existing assets - YES <br> Ineligible investments - YES',
-        Sectorclassification: 'Activities that make a substantial contribution define their eligibility based on TSC, which include qualitative or quantitative metrics and thresholds.',
-        DonosignificantharmDNHS: 'YES <br> <br> Furthermore, activities must comply with the DNSH requirements for other environmental objectives defined in the taxonomies. Generic DNSH requirements for all activities and specific requirements for certain activities exist (similar to the EU). When an activity does not have specific requirements then generic DNSH requirements must be followed.',
-        Socialobjectivessafeguards: 'The eligible asset must ensure that it does not generate a negative social impact. (social risks, working conditions…)',
-        Additionalguidance: 'The only official regulatory framework for the adoption of the Colombian Green Taxonomy is the SFC’s External Circular 005 of 20223 which provides instructions for adoption. It allows entities supervised by the SFC the option of using the taxonomy for various purposes, including identifying financing and investment opportunities for supporting the transition to a sustainable economy, measuring portfolio alignment with green assets and activities, structuring green products and solutions, and enhancing disclosure and transparency practices. The external circular includes three annexes specifying: the use of the taxonomy for investment portfolios, green bond issuers, and voluntary pension funds.',
-        otherusefuldocuments: '• CE 28, 2020 - Green Bonds <br> • CE 08, 2021 - ESG Integration for Voluntary Pension Funds <br> • CE 31, 2021 – ESG and Climate Disclosure Regulation for Issuers <br> • PCE 2022 - Sustainability Linked Bonds <br> <br> The following report provides a helpful comparison between the EU and Colombian Taxonomy provided by the Climate Bond Institute.',
-        MemberofIPFS: 'NO',
-        Biodiversity: '-',
-        country: 'Colombia'
-    },
-    {
-        latitude: 47.1625,
-        longitude: 19.5033,
-        name: 'Sustainable Finance Taxonomy',
-        link: 'https://ec.europa.eu/sustainable-finance-taxonomy/taxonomy-compass/the-compass',
-        yearinitiated: '2020, 2020 with some provisions effective from 1 Jan 2022',
-        mostrecentupdate: '2023 <br> <br> The EU Regulation on the establishment of a framework to facilitate sustainable investment (the Taxonomy Regulation) was published in the Official Journal of the EU (the OJ) on 22 June 2020. <br> <br>. As the legal instrument used is a Regulation, it became directly applicable in EU Member States and did not require further national implementation processes to be implemented (unlike a Directive). <br> <br> The European Commission adopted a phased approach to allow companies more time to comply with disclosure requirements. <br> <br> Some provision applied from 1 January 2022. These include provisions on: -	Climate Change Mitigation -	Climate Change Adaptation <br> <br> As such in the first year of application, nonfinancial undertakings only had to report the portion — in terms of turnover, CapEx and OpEx — of their eligible economic activities with regard to the Climate Delegated Act. <br> <br> For the 2022 reporting year, the obligation was extended to alignment: nonfinancial undertakings are now required to report the share of turnover, CapEx and OpEx related to taxonomy-eligible and taxonomy-aligned activities with regard to the Climate Delegated Act. This disclosure must include three tables for CapEx, OpEx and turnover, indicating the share of taxonomy-aligned activities, taxonomy-eligible but not aligned activities and non-taxonomy-eligible activities. In contrast financial undertakings were granted a two-year phase-in period for reporting, with alignment KPIs becoming mandatory in fiscal year 2023 — as financial undertakings will have to rely on data disclosed by their nonfinancial and financial counterparties to develop the indicators mandated by the Delegated Act. <br> <br> Additionally, from the reporting year 2022, credit institutions are required to disclose the proportion of their trading portfolio and on-demand interbank loans in their total assets. The insurers are to disclose the proportion of taxonomy-eligible and taxonomy-ineligible nonlife insurance and reinsurance economic activities. <br> <br> Further provisions came into effect on 1 January 2023: -	Sustainable use and protection of water and marine resources; -	Transition to a circular economy; -	Pollution prevention and control; -	Protection and restoration of biodiversity and ecosystems <br> <br> EU Regulations and Directives (known as Level 1, as described above regarding the Regulation) are often supplemented in more detail with what are and Level 2 measures that have a different legislative procedure to enable quicker amendment (Regulated Technical Standards/ Technical Screening Criteria (TSC) and Guidance. <br> <br> Following its publication, work started on the underlying Level 2 measures needed to supplement it. <br> <br> These relate to Key Performance Indicators - KPIs: Measures to specify the content, methodology and presentation of key performance indicators (KPIs) that non-financial undertakings and asset managers must disclose; and establishing TSCs to determine the conditions under which a given economic activity should be considered to be contributing substantially to an environmental objective. On 10 December 2021, the Commission Delegated Regulation (EU) 2021/2178 (the Disclosures Delegated Act) was published in the OJ. Its provisions took effect on 1 January 2022. The Disclosures Delegated Act was amended by the Complementary Delegated Act (EU) 2022/1214 (the CDA), which was published in the OJ on 15 July 2022 and which came into force on 1 January 2023. <br> <br> The CDA made amendments specifying disclosures to be made in respect of certain nuclear energy and fossil gas activities. <br> <br> Technical Screening Criteria (TSCs) <br> <br> (a) Climate Delegated Act On 9 December 2021, the Commission Delegated Regulation (EU) 2021/2139 (the Climate Delegated Act was published in the OJ). Its provisions took effect on 1 January 2022. <br> <br> The  Climate Delegated Act which came into force on 1 January 2023 was amended on 15 July 2022 through the Complementary Delegated Act (EU) 2022/1214 adding TSC by which certain nuclear energy and fossil gas activities which were classified as transitional activities which contribute to climate change mitigation under the Taxonomy Regulation. <br> <br> On 27 June 2023, the Commission published a draft Delegated Regulation, Annex I (Climate change mitigation) and Annex II (Climate change adaptation) to amend the Climate Delegated Act – these cover economic activities that make a substantial contribution to the environmental objectives of <br> (i)	climate change mitigation and <br> (ii)	climate change adaptation but which have not been previously included in the taxonomy (notably some manufacturing activities in relation to key components for low carbon transport and electrical equipment). <br> <br> Also on 27 June 2023, the Commission published a draft Taxonomy Environmental Delegated Act (adopted in the OJ following EP and Council review), which would establish Technical Screening Criteria (TSC) for activities that can make a substantial contribution to the environmental objectives for which TSCs are not already available. <br> <br> The purpose of this was to: <br> -	transition to a circular economy; -	control or protection and restoration of biodiversity; -	pollution prevention; and -	use and protection of water and marine resources. <br> <br> For further guidance on  TSC Notices the Commission sets out draft responses to FAQs on TSCs for the environmental objectives of climate change mitigation and climate change adaptation, contained in the Climate Delegated Act. <br> <br> The Environmental Delegated Act also had the effect of amending the Disclosures Delegated Act, to clarify the disclosure obligations for the additional activities and supplement the requirements in Article 10 of the Disclosures Delegated Act. Further targeted amendments to the Taxonomy Climate Delegated Act set out economic activities that make a substantial contribution to the environmental objectives of both climate change mitigation and climate change adaptation but which have not been previously included in the taxonomy. <br> <br> The Measures applied as of January 2024. <br> <br> Further Interpretation and Guidance provided is included. <br> <br> Areas of future work: Macel Haag European Commission Directorate-General for Financial Stability, Financial Services and Capital Markets Union Deputy Director has indicated that the key priority will be a simplified Taxonomy for SMEs. Other areas to watch will be the extension of biodiversity and further work on social taxonomy (December 2023 at CEPs think tank event on usability of the taxonomy see Utube video of the event). <br> <br> The current Taxonomy leaves a wide variety of economic activities non-classified. Some stakeholders may incorrectly interpret this non-classification or “not green” as a negative signal and there are fears that finance would simply disappear for activities that fall outside the current Taxonomy. To resolve this, An Extended Taxonomy could be designed to include intermediate as the current Regulation is not intended to define any category of activity other than “environmentally sustainable”; performing activities, significantly harmful activities and always significantly harmful activities.  The Commission would however need to identify further economic activities with no technological possibility of improving their environmental performance which was not in the scope of the existing taxonomy. The report published in March 2022 sets out how this could be done and the implications of this. Platform on Sustainable Finance’s report on environmental transition taxonomy (europa.eu). <br> <br> As noted by the report “Since the proposal of the Taxonomy Regulation (TR), it has become increasingly clear that many Taxonomy users could benefit from an extension of the Taxonomy framework to introduce other performance levels. Doing so would enhance transparency and would also allow for more nuanced decision-making and lend wider support to an environmental transition in the whole economy. The Taxonomy Regulation requires the European Commission to deliver a report on the possible extension of the Taxonomy to other economic activities. <br> <br> The report constitutes the Platform’s input to the European Commission’s forthcoming report under Article 26, and provides clear signals to and recommendations for financial markets and other stakeholders. <br> <br> The Platform has considered the premises, issues and options for and against extending the environmental Taxonomy ‘beyond green’ to classify a wider range of economic activities. We have consulted with a wide variety of potential Taxonomy users and published our interim report for public feedback. In addition to this work on an extended 6 environmental Taxonomy: focussing on the six environmental objectives and on transition across all sectors of the economy, the Platform has recently published its proposal for an EU Social Taxonomy, which is compatible and coherent with … this report.” The report however will be considered by the European Commission as it continues the way forward.',
-        mandatedinlaworvoluntary: 'Mandated <br> <br> See above for the technical details and links to the various legislative measures used and an explanation of what they do.',
-        developer: 'The European Commission. <br> <br> The Technical Expert Group (TEG) on sustainable finance: The TEG commenced its work in July 2018. Its 35 members from civil society, academia, business and the finance sector, as well as additional members and observers from EU and international public bodies work both through formal plenaries and subgroup meetings for each workstream. To allow it to conclude its technical work and retain the expertise before the future Platform on sustainable finance is set up, the mandate of the TEG was extended until 30 September 2020 following which it was replaced by the Platform on Sustainable Finance. <br> <br> The Platform on Sustainable Finance plays a key role in enabling such cooperation by bringing together the best expertise on sustainability from the corporate and public sector, from industry as well as academia, civil society and the financial industry. The Platform was first established in October 2020, for a two-year mandate that ended in October 2022. A call for applications for the selection of members for the new mandate of the Platform was launched in October 2022 and the new composition of the Platform was announced on 8 February 2023. The first meeting will be held on 7 March 2023. <br> <br> Member States expert group on sustainable finance (E03603): The European Commission adopted its “Action Plan on Financing Sustainable Growth” on 8 March 2018 which proposed concrete actions that will help achieve the Sustainable Development Goals and the objectives set in the Paris Agreement on Climate Change drawing on the recommendations of the High-Level Expert Group on Sustainable Finance. In its Action Plan, the European Commission has called on other players, such as EU Member States, to support implementing sustainable finance actions and promote the transformation in their territories. For this purpose, the European Commission is creating a dedicated EU Member States expert group on sustainable finance.',
-        objective: 'The EU recent Taxonomy Regulation aims to facilitate the transformation of the EU economy in alignment with its European Green Deal objectives, including the ambitious 2050 climate-neutrality goal by standardising the concept of environmentally sustainable investment across the EU. <br> <br> The Taxonomy outlines six key environmental objectives: <br> <br> 1.	Addressing climate change by mitigating its impact. <br> 2.	Adapting to the challenges posed by climate change. <br> 3.	Promoting sustainable management and protection of water and marine resources. <br> 4.	Encouraging the shift towards a circular economy. <br> 5.	Preventing and controlling pollution. <br> 6.	Safeguarding and rejuvenating biodiversity and ecosystems. <br> <br> The Taxonomy Regulation establishes a shared framework for defining what is considered "sustainable." This framework serves as the foundation for disclosure requirements and official labelling of financial products, as outlined in other Regulations and Directives. To provide some context, in December 2016, the European Commission formed a High-Level Expert Group on Sustainable Finance (HLEG) to guide the development of its sustainable finance roadmap. The HLEG recommendations formed the basis of the March 2018 Action Plan on Financing the Sustainable Growth. <br> <br> Creating an EU-wide classification system for green activities emerged as a top priority in both documents. In response, the Commission unveiled a comprehensive legislative package in May 2018, including the Taxonomy Regulation. Additionally, it established a Technical Expert Group on Sustainable Finance (TEG) composed of 35 members from civil society, academia, business, and the finance sectors. With extensive input from scientific experts and various stakeholder consultations, the TEG produced a Final Report in March 2020. This report contained recommendations regarding the overall design of the taxonomy, practical implementation guidelines, and a comprehensive technical annex with screening criteria. <br> <br> The EU Taxonomy, as recommended by the TEG Final Report, was incorporated into the Taxonomy Regulation 2020/852, adopted in June 2020. This regulation encompasses the six environmental objectives mentioned earlier. The delegated act concerning climate change mitigation (CCM) and adaptation (CCA), released in April 2021, also originated from the TEG work. Meanwhile, the screening criteria for the remaining environmental objectives are currently in development. <br> <br> Furthermore, the Taxonomy Regulation established an EU Platform on Sustainable Finance, tasked with assisting the Commission in further developing the EU Taxonomy and its broader sustainable finance policy. In summary, the EU Taxonomy relies on the NACE economic activity classification system, which exists but is not widely utilized in Europe. An economic activity is deemed "environmentally sustainable" if it meets specific conditions outlined in the Taxonomy Regulation.',
-        linkpolicyobjectives: 'Paris Agreement: Yes <br> <br> Regional Frameworks: Yes, principally <br> <br> National Strategies: ',
-        sectorscovered: 'Activities: 94 activities or assets <br> <br> Sectors: Construction, infrastructure and real estate, Consumer products, Credit institutions, Health, biotechnology and chemicals, Insurance undertakings, Manufacturing, Mining and quarrying, Mobility - vehicle manufacturing and transport, Oil and gas, Power and Utilities',
-        approachtoeligibility: 'Principle-based, Pass-list approach, Threshold and criteria, Umbrella Clauses, Any combination of the above',
-        basedonanothertaxonomy: 'No',
-        Intendedtobeinteroperable: 'No <br> <br> Nevertheless following the creation of the taxonomy the European Commission and the following founding members Argentina, Canada, Chile, China, India, Kenya and Morocco established the International Platform on Sustainable Finance on 18 October 2019 to encourage interoperability. <br> <br> Since then, Australia, Hong Kong Special Administrative Region of the People’s Republic of China (Hong Kong SAR of PRC), Indonesia, Japan, Malaysia, New Zealand, Norway, Senegal, Singapore, Sri Lanka, Switzerland and the United Kingdom also joined the IPSF. Together, the 20 members of the IPSF represent 58% of greenhouse gas emissions, 51% of the world population and 54% of global GDP.',
-        Purpose: 'Green: focus on identifying eligible <br> <br> transition: supports transition of all existing assets <br> <br> Enabling & Transitional Activities <br> <br> Within the activities that substantially contribute to one or more environmental objectives, the Taxonomy also defines two classification categories: enabling activities and transitional activities. These were added to allow activities which may not otherwise have been considered sustainable to contribute to the overall objective of promoting sustainability. <br> <br> Enabling activities allow other activities to make a substantial contribution to one or more of the Taxonomy’s six objectives. However, enabling activities cannot lead to a ‘lock-in’ of assets which would undermine long-term environmental goals. They must also have a substantial positive environmental impact over the activity’s lifecycle. <br> <br> Transitional activities must contribute to climate change mitigation and a pathway to keeping global warming in line with Paris Agreement commitments. Transitional activities only qualify where the following criteria are met: <br> <br> •	There are no technologically or economically feasible low-carbon alternatives; <br> •	Green House Gas emission levels correspond to the best performance in the sector    or industry; and <br> •	The activity does not lead to carbon lock-in or hamper the development and deployment of low-carbon alternatives. <br> <br> Ineligible investment: None',
-        Sectorclassification: '-',
-        DonosignificantharmDNHS: 'Technical Screening Criteria (TSC) <br> Define the specific requirements and thresholds for an activity to be considered as significantly contributing to a sustainability objective. These TSCs are being elaborated in secondary legislation called Delegated Acts (DAs). <br> <br> Do No Significant Harm’(DNSH) <br> For an activity pursuing one or more of the six objectives to qualify as sustainable it cannot cause significant harm to any of the other Taxonomy objectives. For each activity, the TSC lay out thresholds to define compliance with do no significant harm.',
-        Socialobjectivessafeguards: 'No, but currently in progress <br> <br> The EU work has progressed on this with a paper: Platform on Sustainable Finance’s report on social taxonomy (europa.eu). <br> Other useful information as it relates to extending the EU taxonomy on social issues includes: ESG integration and Social Taxonomy developments in the EU Sustainable Finance Framework',
-        Additionalguidance: 'YES <br> <br> For further guidance on  TSC Notices the Commission sets out draft responses to FAQs on TSCs for the environmental objectives of climate change mitigation and climate change adaptation, contained in the Climate Delegated Act <br> <br> Interpretation and Guidance provided: <br> <br> On 20 October 2023, the following Commission notices regarding interpretation and implementation of certain legal provisions under the Taxonomy Regulation were published in the Official Journal (OJ): <br> The Climate Delegated Act Notice sets out responses to FAQs “on the interpretation and implementation of certain legal provisions of the EU Taxonomy Climate Delegated Act establishing technical screening criteria for economic activities that contribute substantially to climate change mitigation or climate change adaptation and do no significant harm to other environmental objective”. <br> <br> The Disclosures Delegated Act Notice sets out responses to FAQs “on the interpretation and implementation of certain legal provisions of the Disclosures Delegated Act under Article 8 of EU Taxonomy Regulation on the reporting of Taxonomy-eligible and Taxonomy-aligned economic activities and assets”. <br> <br> On 15 June 2023, the Commission published a Notice (the Notice) as part of its ESG package) that deals with “the interpretation and implementation of certain legal provisions of the EU Taxonomy Regulation and links to the Sustainable Finance Disclosure Regulation.” The Notice considers the following questions and issues: <br> -	can Taxonomy-aligned investments qualify as ‘sustainable investment’ under the SFDR? <br> -	what is the role of minimum safeguards in the Taxonomy Regulation? <br> -	how are minimum safeguards defined under Article 18 of the Taxonomy Regulation? <br> -	key expectations for undertakings under Article 18 of the Taxonomy Regulation. <br> <br> In addition, there is further guidance provided in the following: <br> -	a Commission staff document, FAQ: What is the EU Taxonomy Article 8 delegated act and how will it work in practice?; <br> -	a Commission staff document, FAQs: How should financial and non-financial undertakings report Taxonomy-eligible economic activities and assets in accordance with the Disclosures Delegated Act (updated January 2022); and <br> -	a Commission Notice (published 6 October 2022) on the interpretation of certain legal provisions of the Disclosures Delegated Act on the reporting of Taxonomy-eligible economic activities. <br> <br> Finally, there is also the following the  Disclosures Notice  with FAQ on the Article 8 Disclosure which are set out in the Disclosures Delegated Act – it is likely that much of this disclosure notice will be impacted by the review of SFDR (currently underway) so this notice may decline in its relevance. Please also see EU Taxonomy Navigator (europa.eu)',
-        otherusefuldocuments: 'EU Taxonomy Navigator (europa.eu) <br> <br> The EU taxonomy navigator offers four tools that will help you navigate the EU taxonomy: <br> 1.	EU taxonomy compass: a visual representation of sectors, activities and criteria included in the EU Taxonomy delegated acts <br> 2.	EU taxonomy calculator: a step-by-step guide on reporting obligations <br> 3.	FAQs repository: an overview of questions and answers on the EU taxonomy and its delegated acts <br> 4.	EU taxonomy user guide: a guidance document on the Taxonomy for non-experts <br> <br> OTHER <br> Future work on improving the usability of the taxonomy: A report by the Platform on Sustainable Finance recommendations on data and usability of the EU taxonomy (europa.eu)',
-        MemberofIPFS: 'Yes <br> <br> The European Union was among the founding members.  They are comparing efforts with the CBI with a view to enhance interoperability, convergence is considered too challenging at present',
-        Biodiversity: 'The SFPS 2023 Annual Report notes (bold added): <br> “The EU has taken further steps to address the dual challenges of climate and biodiversity crises. The EU employs a two-pronged approach that combines investment in nature and essential reforms to create the right social and economic context. A cornerstone of this commitment is the EU’s long-term strategy, which strives to restore biodiversity by 2030 and includes the proposal of the EU’s Nature Restoration Law, establishing binding restoration targets for specific habitats and species. Key to advancing these objectives is the EU’s robust framework for sustainable finance, built around the EU Taxonomy, which is gaining increasing importance in the context of biodiversity preservation. In June 2023, the European Commission extended the EU Taxonomy with the Environmental Delegated Act, showcasing the EU’s dedication to embedding biodiversity conservation and restoration criteria into the financial sector. This expansion has led to the introduction of a new set of criteria within the EU Taxonomy, targeting economic activities that make substantial contributions to non-climate environmental objectives. These criteria include provisions for the protection and restoration of biodiversity and ecosystems. Technical screening criteria have been developed to define activities, such as habitat, ecosystem, and species conservation and restoration, as well as those related to accommodations like hotels, holiday resorts, camping grounds, and similar facilities. Expected to come into force as of January 2024, the Delegated Acts reflect the EU’s commitment to addressing the urgent issue of biodiversity preservation. To reinforce sustainability reporting, the EU has introduced the ESRS, with a significant emphasis on biodiversity within these standards. Biodiversity considerations are integrated into general disclosure standards and a dedicated standard, ESRS 4, entirely focused on biodiversity and ecosystems. ESRS 4 necessitates that companies transparently disclose material impacts, risks, and opportunities tied to biodiversity, clarifying their relevance to strategy and business models. <br> <br> Moreover, companies are required to report the processes employed for identifying and assessing material biodiversity and ecosystem-related aspects, along with details of targets, impact metrics, and potential financial implications. <br> <br> Complementing these initiatives, the European Commission has embarked on a proactive approach to address financial risks associated with biodiversity loss. A methodological framework and assessment of potential financial risks linked to biodiversity and ecosystem degradation are currently under development. This endeavour aims to guide financial market participants in assessing the financial risks of biodiversity loss and is set to be published in the first quarter of 2024.  Source IPSF Annual Report 2023 P33.',
-        country: 'EU'
-    },
-    {
-        latitude: -6.2088,
-        longitude: 106.8456,
-        name: 'ASEAN Taxonomy version 1',
-        link: 'https://asean.org/wp-content/uploads/2021/11/ASEAN-Taxonomy.pdf',
-        yearinitiated: '2010',
-        mostrecentupdate: 'This document provides a frame for discussions with official sector and private sector stakeholders to work together on the development of the ASEAN Taxonomy. The ASEAN Taxonomy serves as a reference point to guide capital and funding towards activities that can help promote the systemic transformation needed for the region.',
-        mandatedinlaworvoluntary: '...',
-        developer: 'ASEAN Capital Markets Forum (ACMF), the ASEAN Insurance Regulators Meeting (AIRM), the ASEAN Senior Level Committee on Financial Integration (SLC), and the ASEAN Working Committee on Capital Market Development (WC-CMD)',
-        objective: '...',
-        linkpolicyobjectives: '...',
-        sectorscovered: '...',
-        approachtoeligibility: '...',
-        basedonanothertaxonomy: '...',
-        Intendedtobeinteroperable: '...',
-        Purpose: '...',
-        Sectorclassification: 'Corporations, Financial Service providers, Investment Managers, Asset Owners (Other), Asset Owners (Insurance companies), Asset Owners (Corporate pension or equivalent plans), Asset Owners (non-corporate Pension Funds or equivalent), Voluntary, Taxonomy.',
-        DonosignificantharmDNHS: '...',
-        Socialobjectivessafeguards: '...',
-        Additionalguidance: '...',
-        otherusefuldocuments: '...',
-        MemberofIPFS: '...',
-        Biodiversity: '...',
-        country: 'ASEAN'
-    },
-    {
-        latitude: 23.685,
-        longitude: 90.3563,
-        name: 'Sustainable Finance Policy for Banks and Financial Institutions',
-        link: 'http://documents1.worldbank.org/curated/en/953011593410423487/pdf/Developing-a-National-Green-Taxonomy-A-World-Bank-Guide.pdf ; https://www.bb.org.bd/mediaroom/circulars/gbcrd/dec312020sfd05.pdf',
-        yearinitiated: '2017',
-        mostrecentupdate: '2020 <br> <br> The policy includes Sustainable Finance Taxonomy along with a country perspective Green Taxonomy. The Green Finance and the Sustainable Linked Finance taxonomies together comprise the Sustainable Finance Taxonomy. Comprehensive lists of green products/projects/initiatives and identical areas of sustainable linked finance have been included in the policy. This policy provides clarity and guidance to identify green and Sustainable Linked Finance.',
-        mandatedinlaworvoluntary: '...',
-        developer: 'Bandladesh Bank (BB)',
-        objective: '...',
-        linkpolicyobjectives: '...',
-        sectorscovered: '...',
-        approachtoeligibility: '...',
-        basedonanothertaxonomy: '...',
-        Intendedtobeinteroperable: '...',
-        Purpose: '...',
-        Sectorclassification: 'Financial Service providers, Investment Managers, Asset Owners (Other), Asset Owners (Insurance companies), Asset Owners (Corporate pension or equivalent plans), Asset Owners (non-corporate Pension Funds or equivalent), Voluntary, Taxonomy.',
-        DonosignificantharmDNHS: '...',
-        Socialobjectivessafeguards: '...',
-        Additionalguidance: '...',
-        otherusefuldocuments: '...',
-        MemberofIPFS: '...',
-        Biodiversity: '...',
-        country: 'Bangladesh'
-    },
-    {
-        latitude: 35.8617,
-        longitude: 104.1954,
-        name: 'Green Bond Endorsed-Projects Catalogue and Green Industry Guidance Catalogue',
-        link: 'http://www.pbc.gov.cn/goutongjiaoliu/113456/113469/4236341/index.html and https://www.ndrc.gov.cn/fggz/hjyzy/stwmjs/201903/t20190305_1220625.html',
-        yearinitiated: '2015 and 2019',
-        mostrecentupdate: '2018 and - <br> <br> This revised catalogue unifies domestic standards on green bonds and green projects. Aiming to be more aligned with international standards and Chinas carbon neutrality goal, it removes clean use of coal and other fossil energy sources and adopts a do no significant harm principle. <br> <br> Green Industry Guidance Catalogue: The guidance is meant to enact policies to strengthen green industry development, and combine catalogue with investment, pricing, and financial policies to improve catalogue practicality. It covers 6 main industrial sectors: energy conservation and environmental protection, clean production, clean energy, ecological environment, green upgrade of infrastructure and green service. Clean coal is still in this version.',
-        mandatedinlaworvoluntary: '...',
-        developer: 'Peoples Bank of China, National Development and Reform Commission, and the China Securities Regulatory Commission <br> <br> National Development and Reform Commission, Ministry of Industry and Information Technology, Ministry of Natural Resources, Ministry of Ecology and Environment, Ministry of Housing and Urban-Rural Development, Peoples Bank of China, National Energy Administration.',
-        objective: '...',
-        linkpolicyobjectives: '...',
-        sectorscovered: '...',
-        approachtoeligibility: '...',
-        basedonanothertaxonomy: '...',
-        Intendedtobeinteroperable: '...',
-        Purpose: '...',
-        Sectorclassification: 'Others (Exchanges etc.), Corporations, Mandatory (including comply or explain), Taxonomy <br> <br> Corporations, Asset Owners (Insurance companies), Asset Owners (Corporate pension or equivalent plans), Asset Owners (non-corporate Pension Funds or equivalent), Mandatory (including comply or explain), Taxonomy.',
-        DonosignificantharmDNHS: '...',
-        Socialobjectivessafeguards: '...',
-        Additionalguidance: '...',
-        otherusefuldocuments: '...',
-        MemberofIPFS: '...',
-        Biodiversity: '...',
-        country: 'China'
-    },
-    {
-        latitude: 0,
-        longitude: -30,
-        name: 'Common Ground Taxonomy - Instruction report',
-        link: 'https://ec.europa.eu/info/files/international-platform-sustainable-finance-common-ground-taxonomy-report-2021_en',
-        yearinitiated: '2021',
-        mostrecentupdate: '- <br> <br> This report is an in-depth comparison and mapping exercise between the EU and Chinas taxonomies. It aims to provide more clarity and transparency about the commonalities and differences between approaches and potentially contribute to the analysis to lower the transboundary cost of sustainable investments and scale up the mobilization of sustainable capital internationally. It also provides a solid methodology on the basis of which other taxonomies can be compared in the future. The IPSF states that, amongst others, it may inform financial institutions in aligning their activities with low carbon economy objectives.',
-        mandatedinlaworvoluntary: '...',
-        developer: 'International Platform on Sustainable Finance (IPSF)',
-        objective: '...',
-        linkpolicyobjectives: '...',
-        sectorscovered: '...',
-        approachtoeligibility: '...',
-        basedonanothertaxonomy: '...',
-        Intendedtobeinteroperable: '...',
-        Purpose: '...',
-        Sectorclassification: 'Others (Exchanges etc.), Corporations, Financial Service providers, Investment Managers, Asset Owners (Other), Asset Owners (Insurance companies), Asset Owners (Corporate pension or equivalent plans), Asset Owners (non-corporate Pension Funds or equivalent), Voluntary, Taxonomy.',
-        DonosignificantharmDNHS: '...',
-        Socialobjectivessafeguards: '...',
-        Additionalguidance: '...',
-        otherusefuldocuments: '...',
-        MemberofIPFS: '...',
-        Biodiversity: '...',
-        country: 'Global'
-    },
-    {
-        latitude: 48.0196,
-        longitude: 66.9237,
-        name: 'Concept on introduction and development of green finance instruments and principles',
-        link: 'https://gfc.aifc.kz/uploads/Concept%20on%20introduction%20and%20development%20of%20green%20finance%20instruments%20and%20principles.pdf',
-        yearinitiated: '2017',
-        mostrecentupdate: 'This roadmap sets out sustainable finance ambitions - including the development of a national taxonomy.',
-        mandatedinlaworvoluntary: '...',
-        developer: 'AIFC Green Finance Centre',
-        objective: '...',
-        linkpolicyobjectives: '...',
-        sectorscovered: '...',
-        approachtoeligibility: '...',
-        basedonanothertaxonomy: '...',
-        Intendedtobeinteroperable: '...',
-        Purpose: '...',
-        Sectorclassification: 'Corporations, Financial Service providers, Investment Managers, Asset Owners (Other), Asset Owners (Insurance companies), Asset Owners (Corporate pension or equivalent plans), Asset Owners (non-corporate Pension Funds or equivalent), Voluntary, National Sustainable Finance Strategy, Taxonomy.',
-        DonosignificantharmDNHS: '...',
-        Socialobjectivessafeguards: '...',
-        Additionalguidance: '...',
-        otherusefuldocuments: '...',
-        MemberofIPFS: '...',
-        Biodiversity: '...',
-        country: 'Kazakhstan'
-    },
-    {
-        latitude: 4.2105,
-        longitude: 101.9758,
-        name: 'Climate Change and Principle-based Taxonomy',
-        link: 'https://www.bnm.gov.my/documents/20124/938039/Climate+Change+and+Principle-based+Taxonomy.pdf',
-        yearinitiated: '2021',
-        mostrecentupdate: 'The Taxonomy sets out five Guiding Principles (GPs) intended to help financial institutions (FIs) assess and categorize economic activities according to the extent to which they meet climate objectives and promote the transition to a low-carbon economy.',
-        mandatedinlaworvoluntary: '...',
-        developer: 'Bank Negara Malaysia (Central Bank of Malaysia)',
-        objective: '...',
-        linkpolicyobjectives: '...',
-        sectorscovered: '...',
-        approachtoeligibility: '...',
-        basedonanothertaxonomy: '...',
-        Intendedtobeinteroperable: '...',
-        Purpose: '...',
-        Sectorclassification: 'Corporations, Financial Service providers, Investment Managers, Asset Owners (Other), Asset Owners (Insurance companies), Asset Owners (Corporate pension or equivalent plans), Asset Owners (non-corporate Pension Funds or equivalent), Voluntary, Taxonomy.',
-        DonosignificantharmDNHS: '...',
-        Socialobjectivessafeguards: '...',
-        Additionalguidance: '...',
-        otherusefuldocuments: '...',
-        MemberofIPFS: '...',
-        Biodiversity: '...',
-        country: 'Malaysia'
-    },
-    {
-        latitude: 46.8625,
-        longitude: 103.8467,
-        name: 'Mongolia Green Taxonomy',
-        link: 'https://www.greenfinanceplatform.org/policies-and-regulations/mongolia-green-taxonomy',
-        yearinitiated: '2019',
-        mostrecentupdate: 'The Mongolian green taxonomy aims to “develop a nationally agreed classification framework of activities that contribute to climate change mitigation, adaptation, pollution prevention, resource conservation, and livelihood improvement in the context of green finance”. It is designed to be applied to a wide range of financial instruments including corporate lending, consumer lending, project finance, SME finance, green bonds, equity investment, insurance, credit guarantee, grants, financial advisory and technical assistance, among others. The activities identified in this version of the taxonomy will be reviewed every 3-5 years following policy shifts, scientific developments, technological changes, and new industry needs in the green finance space. It is based on 6 principles: Contribute to national policies and targets; Address environmental challenges; Cover high-emitting, key economic sectors; Align with international standards and good practices; Comply with ESG standards; Continues review and development.',
-        mandatedinlaworvoluntary: '...',
-        developer: 'Financial Stability Commission of Mongolia',
-        objective: '...',
-        linkpolicyobjectives: '...',
-        sectorscovered: '...',
-        approachtoeligibility: '...',
-        basedonanothertaxonomy: '...',
-        Intendedtobeinteroperable: '...',
-        Purpose: '...',
-        Sectorclassification: 'Corporations, Financial Service providers, Investment Managers, Asset Owners (Other), Asset Owners (Insurance companies), Asset Owners (Corporate pension or equivalent plans), Asset Owners (non-corporate Pension Funds or equivalent), Voluntary, Taxonomy.',
-        DonosignificantharmDNHS: '...',
-        Socialobjectivessafeguards: '...',
-        Additionalguidance: '...',
-        otherusefuldocuments: '...',
-        MemberofIPFS: '...',
-        Biodiversity: '...',
-        country: 'Mongolia'
-    },
-    {
-        latitude: 61.524,
-        longitude: 105.3188,
-        name: 'Green Taxonomy',
-        link: 'http://publication.pravo.gov.ru/Document/View/0001202109240043',
-        yearinitiated: '2021',
-        mostrecentupdate: 'The Taxonomy was developed with the ambition of compatibility with international best practice. It covers waste management, energy, construction, industry, transport, water supply, biodiversity, and agriculture. The energy criteria follow the 100g CO2e/kWh threshold, based on the recommendations of the Technical Expert Group (EU TEG) on sustainable finance for the EU Taxonomy of sustainable activities. It includes adaptation criteria and provides an opportunity to develop transition criteria in the future. However, it does not include do no significant harm criteria.',
-        mandatedinlaworvoluntary: '...',
-        developer: 'Vnesheconombank (VEB)',
-        objective: '...',
-        linkpolicyobjectives: '...',
-        sectorscovered: '...',
-        approachtoeligibility: '...',
-        basedonanothertaxonomy: '...',
-        Intendedtobeinteroperable: '...',
-        Purpose: '...',
-        Sectorclassification: 'Others (Exchanges etc.), Corporations, Financial Service providers, Investment Managers, Asset Owners (Other), Asset Owners (Insurance companies), Asset Owners (Corporate pension or equivalent plans), Asset Owners (non-corporate Pension Funds or equivalent), Voluntary, Taxonomy.',
-        DonosignificantharmDNHS: '...',
-        Socialobjectivessafeguards: '...',
-        Additionalguidance: '...',
-        otherusefuldocuments: '...',
-        MemberofIPFS: '...',
-        Biodiversity: '...',
-        country: 'Russia'
-    },
-    {
-        latitude: 1.3521,
-        longitude: 103.8198,
-        name: 'Green and transition taxonomy',
-        link: 'https://abs.org.sg/industry-guidelines/gfit-taxonomy-public-consultation',
-        yearinitiated: '2021',
-        mostrecentupdate: '2022 <br> <br> This draft initiative is one of four allocated to the Green Finance Industry Taskforce (GFIT), convened by the Monetary Authority of Singapore to accelerate the development of green finance: (i) develop a taxonomy (ii) enhance environmental risk management practices of financial institutions (iii) improve disclosures, and (iv) foster green finance solutions. Under the first focus area, the GFIT is exploring the development of a taxonomy for Singapore-based financial institutions, with particular relevance to those active across ASEAN. The GFIT held a consultation on their initial thinking around the potential development of a taxonomy which closed in March 2021. A second consultation paper was released on 12 May 2022, building on the broad support for the development of the Taxonomy reflected in the feedback received for the first consultation document, as well as key developments in the sustainability space. The second paper expands on the traffic light approach, and adds granularity to the application and thresholds for classification, supported by science and data.',
-        mandatedinlaworvoluntary: '...',
-        developer: 'Green Finance Industry Taskforce (GFIT)',
-        objective: '...',
-        linkpolicyobjectives: '...',
-        sectorscovered: '...',
-        approachtoeligibility: '...',
-        basedonanothertaxonomy: '...',
-        Intendedtobeinteroperable: '...',
-        Purpose: '...',
-        Sectorclassification: 'Corporations, Financial Service providers, Investment Managers, Asset Owners (Other), Asset Owners (Insurance companies), Asset Owners (Corporate pension or equivalent plans), Asset Owners (non-corporate Pension Funds or equivalent), Voluntary, Taxonomy.',
-        DonosignificantharmDNHS: '...',
-        Socialobjectivessafeguards: '...',
-        Additionalguidance: '...',
-        otherusefuldocuments: '...',
-        MemberofIPFS: '...',
-        Biodiversity: '...',
-        country: 'Singapore'
-    },
-    {
-        latitude: -30.5595,
-        longitude: 22.9375,
-        name: 'South African Green Finance Taxonomy',
-        link: 'https://sustainablefinanceinitiative.org.za/taxonomy/',
-        yearinitiated: '2022',
-        mostrecentupdate: 'This first edition of the South African Green Finance Taxonomy aims to have a range of benefits. Amongst other things, it will (i) Help the financial sector with clarity and certainty in selecting green investments in line with international best practice and South Africas national policies and priorities. (ii) Reduce financial sector risks through enhanced management of environmental and social performance. (iii) Reduce the costs associated with labelling and issuing green financial instrument. (iv) Unlock significant investment opportunities for South Africa in a broad range of green and climate-friendly assets. (v) Support regulatory and supervision oversight of the financial sector. (vi) Provide a basis for regulators to align or reference green financial products.',
-        mandatedinlaworvoluntary: '...',
-        developer: 'National Treasury of the republic of South Africa with the IFC, Carbon Trust and NBI',
-        objective: '...',
-        linkpolicyobjectives: '...',
-        sectorscovered: '...',
-        approachtoeligibility: '...',
-        basedonanothertaxonomy: '...',
-        Intendedtobeinteroperable: '...',
-        Purpose: '...',
-        Sectorclassification: 'Credit Rating Agencies, Corporations, Investment Managers, Asset Owners (Other), Asset Owners (Insurance companies), Asset Owners (Corporate pension or equivalent plans), Asset Owners (non-corporate Pension Funds or equivalent), Mandatory (including comply or explain), Taxonomy, Investor ESG disclosure, Corporate ESG disclosure.',
-        DonosignificantharmDNHS: '...',
-        Socialobjectivessafeguards: '...',
-        Additionalguidance: '...',
-        otherusefuldocuments: '...',
-        MemberofIPFS: '...',
-        Biodiversity: '...',
-        country: 'South Africa'
-    },
-    // Add more taxonomies here
-];
 
-function featureToGeoJSON(taxonomy) {
-    return {
-        'type': 'Feature',
-        'properties': {
-            'name': taxonomy.name,
-            'link': taxonomy.link
-        },
-        'geometry': {
-            'type': 'Point',
-            'coordinates': [taxonomy.longitude, taxonomy.latitude]
+
+        function onMouseMove(e) {
+            if (isDragging) {
+                const sidebarWidth = e.clientX; // Get the new sidebar width based on cursor position
+                const mapContainer = document.getElementById('map'); // Assuming your map container has the ID 'map'
+
+                // Update sidebar width and ensure the right border is maintained
+                sidebar.style.width = `${sidebarWidth}px`;
+                // No need to explicitly set the border if it's already defined in your CSS and not removed by this script
+
+                // Update drag handle position
+                dragHandle.style.left = `${sidebarWidth}px`;
+
+                // Calculate and update the map container's left margin to accommodate the new sidebar width
+                mapContainer.style.left = `${sidebarWidth}px`;
+
+                sidebar.style.borderRight = '1px solid #ddd';
+
+                // Ensure the map adjusts to the new layout
+                map.resize(); // This calls the Mapbox GL JS map.resize() method to adjust the map's size
+            }
         }
-    };
-}
-// ... (other code)
 
-const popup = new mapboxgl.Popup({
-    closeButton: false,
-    closeOnClick: true,
-    className: 'custom-popup' // Add this classf
-});
 
-map.on('click', 'taxonomy-markers', (e) => {
-    const taxonomyName = e.features[0].properties.name;
-    const taxonomy = esgTaxonomies.find(item => item.name === taxonomyName);
-    if (taxonomy) {
-        const popupContent = document.createElement('div');
-        popupContent.innerHTML = `
+
+
+
+
+
+        function normalize(string) {
+            return string.trim().toLowerCase();
+        }
+        function featureToGeoJSON(taxonomy) {
+            return {
+                'type': 'Feature',
+                'properties': {
+                    'name': taxonomy.name,
+                    'link': taxonomy.link
+                },
+                'geometry': {
+                    'type': 'Point',
+                    'coordinates': [taxonomy.longitude, taxonomy.latitude]
+                }
+            };
+        }
+        function highlightText(content, term) {
+            const highlightStartTag = "<span class='highlighted'>";
+            const highlightEndTag = "</span>";
+            const newText = content.replace(new RegExp(`(${term})`, 'ig'), `${highlightStartTag}$1${highlightEndTag}`);
+            return newText;
+        }
+        function filterPopupContent(inputElement) {
+            const searchValue = inputElement.value.toLowerCase();
+            const contentDiv = inputElement.nextElementSibling;
+            const textElements = contentDiv.querySelectorAll('.popup-text, .collapsible-content');
+            textElements.forEach(element => {
+                if (searchValue) {
+                    element.innerHTML = highlightText(element.textContent, searchValue);
+                } else {
+                    element.innerHTML = element.textContent;
+                }
+            });
+        }
+        const esgTaxonomies = [
+            {
+                latitude: 56.1304,
+                longitude: -106.3468,
+                name: 'Transition Finance Taxonomy',
+                link: 'https://www.csagroup.org/news/defining-transition-finance-in-canada/',
+                yearinitiated: '2019',
+                mostrecentupdate: 'This taxonomy aims to be “internationally-aligned” ie, can operate independently or be compatible with other international taxonomies that cover areas not covered. The EU taxonomy was a jumping off point for its creation.  It encompasses not only a green definition but a “broader mapping of transition and resiliency-linked economic activities and asset classes. It was intended to be ‘granular enough to avoid ambiguity, while flexible enough to evolve with policy, demand and innovation”. <br> <br> It is intended to work either independently, or with other countries with similar resource endowments, to develop supplemental coverage for industry transition activities that are essential to Canada but not captured under current criteria. <br> <br>Phase 1 would see the SFAC publishing a short-form taxonomy covering priority sectors and activities by mid-2023 (this deadline appears to have been missed), as well as laying the groundwork for the implementation of the taxonomy for the long term, including governance, funding and strategic planning. Phase 2 would involve the full implementation of the Taxonomy initiative and publishing a substantially more complete and detailed taxonomy by end-2025 at the latest.',
+                mandatedinlaworvoluntary: 'No - Due to the voluntary nature of the taxonomy, the governance model proposed does not antcipate a compliance review and enforcement function, although the report notes that its use may ultimately intersect with federal and provincials laws (e.g., issuing financial instruments under the taxonomy would be subject to provincial securities laws that are administered by provincial securities regulators, which play a compliance and enforcement function).',
+                developer: 'The journey to develop a Canadian Taxonomy has not been a linear process. <br> <br> In 2019, The Canadian Expert Panel on Sustainable Finance recommended to the Canadian Government that the creation of a market-based tool to mobilise capital to transition to a net zero greenhouse gas (GHG) emissions economy. <br> <br> Reacting to this, the Canadian financial community and eight industry sectors, including forestry, agriculture, mineral mining, utilities, steel, aluminium, cement, and energy, came together to collaborate on a foundational transition guidance document for the marketplace. The process was facilitated by CSA Group and resulted in the development of a volunteer committee on Transition and Sustainable Finance. The committee worked together over a two-year period, but there were fundamental differences of opinion among committee members, and consensus on the draft foundations document could not be achieved. The CSA Group determined that work of the committee had progressed as far as it could at that time. To determine next steps, CSA Group and the committee intend to work with the Sustainable Finance Action Council (SFAC) and government stakeholders. In May 2021, the Government of Canada launched the Sustainable Finance Action Council (SFAC) to help lead the Canadian financial sector towards integrating sustainable finance into standard industry practice. <br> <br> The SFAC serves as a centre of expertise, partnership, and dialogue on sustainable finance issues in Canada and internationally. It will also help champion the implementation of sustainable finance best practices across the Canadian financial sector and the broader Canadian economy, and support the growth of a well-functioning sustainable finance market in Canada. This will help accelerate movement of private capital in support of the Government of Canada’s climate goals, in particular: <br> <br> • to support the achievement of Canada’s enhanced 2030 target; <br> • to transition to a net-zero emissions economy by 2050; and, <br> • to ensure climate resilience and adaptation throughout Canada. <br> <br> The council’s early emphasis was to focus on enhancing climate-related financial disclosures in Canada’s private and public sector, aligned with the recommendations of the Task Force on Climate-Related Financial Disclosures. The Council also decided to prioritise gender and diversity reporting in a first instance. <br> <br> Three technical expert groups and one working group support the work of the SFAC and are comprised of SFAC organizations as core members, with expertise from industry, academia, civil society, and government incorporated to support progress on workplans. Of the four groups, the taxonomy working group (Lead: Barb Zvan, UPP Investments) was established to outline needs amongst market participants to define green and transition investments and activities within the context of Canada’s capital markets. <br> <br> At the same time as these efforts began, the CSA Group engaged Climate Bonds Initiative to explore the characteristics and approaches of international taxonomies within the Canadian context. It included a review of international taxonomies, focusing on their approaches toward low-carbon transition, along with the application of these approaches to the Canadian economic context. Through this exploration, the challenges and opportunities for the development of a Canadian taxonomy were identified. <br> <br> The report went on to propose and are presented recommendations that could inform a future Canadian transition taxonomy. <br> <br> The future governance proposed consists of a three-tier model: <br> <br> 1. A high-level body that is accountable for the initiative and provides strategic direction and oversight (Tier one); <br> <br> 2.	A technical custodian body with expert and technical staff that develops the standards and technical criteria (Tier two); and <br> <br> 3. Technical advisory groups comprising independent external experts that support the technical work of custodians, as well as forums and due process initiatives to obtain stakeholder feedback on consultation drafts (Tier three).',
+                objective: 'The report suggests the objectives should be as follows: <br> <br> • Prioritise climate mitigation but position the initiative to move quickly into other critical areas, such as climate adaptation and resilience</il> <br> <br> • Develop a versatile taxonomy that can support classifying climate-related financial instruments (e.g., bonds, loans)—as well as other private and public sector use cases <br> <br> • Require issuing companies to commit to issuing net-zero plans, targets and climate disclosure, to ensure the taxonomy is supporting credible transitions <br> <br> • Foster rigorous, scientific-based screening criteria that are reviewed regularly to reflect innovation and climate science <br> <br> • Promote interoperability with major science-based taxonomies globally to foster market confidence and reduce market fragmentation',
+                linkpolicyobjectives: 'Paris Agreement: Yes <br> Regional Framework: - <br> National Strategies: Yes',
+                sectorscovered: 'Not confirmed at this stage (January 2024) <br> <br> The report suggests that in addition to regular reviews, the developers of the taxonomy should consider the merits of a mechanism that would allow for the review of material ad hoc requests from market participants to scope in one-off activities, projects and assets for inclusion in the taxonomy. As it is difficult to set criteria that would cover all intended green and transition activities, a review mechanism would provide discretion to grant ad hoc requests, in keeping with the climate objectives and climate science of the taxonomy.',
+                approachtoeligibility: 'principle-based: YES - The criteria can be set by relying on high-level principles, lists of approved activities, technical screening criteria or a combination. <br> Pass-list approach: - <br> Threshold and criteria: YES <br> Umbrella clauses: TBC <br> Any combination of the above: YES',
+                basedonanothertaxonomy: 'YES',
+                Intendedtobeinteroperable: 'YES',
+                Purpose: 'Green: focus on identifying eligible - YES <br> Transition: supports transition of all existing assets - YES - The criteria and thresholds should require the reporting of standardized metrics and qualitative information, which would establish clear data requirements and support the intra- and inter- industry comparability of taxonomy alignment and post-issuance reporting. <br> Ineligible investments - YES - The criteria can be set by relying on high-level principles, lists of approved activities, technical screening criteria or a combination. The criteria can either be static or dynamic. Dynamic criteria are subject to a regular review process, where the criteria are made more stringent over time to reflect technological advancement and the need for increasing ambition as climate targets draw closer. The report provides an overview of a green and transition finance taxonomy with dynamic criteria. <br> <br> Taken together, the criteria are meant to support a theory of economy-wide change aimed at rapidly expanding green activities, decarbonizing higher-emitting sectors where possible and moving away from economic activities that are inconsistent with global climate objectives and carry significant transition risk. <br> <br> Designing a practical and credible taxonomy for Canada requires drawing boundaries around the types of activities that are consistent with 1.5 °C emissions pathways. These boundaries are important for oil and gas activities given their emissions profile, and they need to be analysed separately, but calibrating them appropriately is a complex undertaking that will require significant technical work and industry engagement in future implementation phases. <br> <br> To be categorized as transition, existing oil and gas projects would need to demonstrate improvements to their emissions intensity by 2030. Eligible projects would therefore need to demonstrate that current and future capital expenditures put them on a track to reduce their emissions intensity such that it complies with the 2030 threshold established via net-zero modeling. Eligible projects would also need to have lifespans that are proportionate to global demand scenarios in representative 1.5°C pathways (recognizing that the runway for gas is likely longer than for oil). Existing oil and gas extraction projects would also need to demonstrate that making the new investment to reduce emissions will not increase the lifespan of their operations',
+                Sectorclassification: '-',
+                DonosignificantharmDNHS: 'YES',
+                Socialobjectivessafeguards: 'Limited reference. The governance includes the need to involve indigenous groups.',
+                Additionalguidance: 'https://www.canada.ca/en/department-finance/programs/financial-sector-policy/sustainable-finance/sustainable-finance-action-council/taxonomy-roadmap-report.html',
+                otherusefuldocuments: '• CE 28, 2020 - Green Bonds <br> • CE 08, 2021 - ESG Integration for Voluntary Pension Funds <br> • CE 31, 2021 – ESG and Climate Disclosure Regulation for Issuers <br> • PCE 2022 - Sustainability Linked Bonds <br> <br> The following report provides a helpful comparison between the EU and Colombian Taxonomy provided by the Climate Bond Institute.',
+                MemberofIPFS: 'YES <br> <br> Latest info from the IPFS: The Canadian Government is examining the advice of SFAC before decide.',
+                Biodiversity: '-',
+                country: 'Canada'
+            },
+            {
+                latitude: 4.7110,
+                longitude: -74.02986,
+                name: 'Taxonomía Verde de Colombia',
+                link: 'https://www.taxonomiaverde.gov.co/webcenter/portal/TaxonomaVerde',
+                yearinitiated: '13 April 2022',
+                mostrecentupdate: '-',
+                mandatedinlaworvoluntary: 'The taxonomy is voluntary and has no legal status.  However, there are regulations in place to support its implementation, although these do not impose specific disclosure obligations.  The SFC has issued external circulars (or rules0 that encourage the use of the taxonomy in labelling of green bonds, ESG portfolio labelling and voluntary labelling of pension fund). SFC’s Centro de Estudios Regulatorios (cerlatam.com)',
+                developer: 'Developed by the Government institutions – The Colombian Superintendency of Finance (SFC), the Ministry of finance (MHCP), The National Planning Department (DNP), the Department of Statistics of Colombia (DANE) and the Ministry of Environment and Sustainable Development (MADS) oversaw the taxonomy development process.',
+                objective: 'The Colombian Green Taxonomy defined a set of 5 principles that will guide further development and updates. The main objective is to make a substantial contribute to climate change mitigation (1), followed by climate change adaptation (2), ecosystem and (3) biodiversity conservation and water management, soil management, (4) circular economy and  pollution prevention and control.  This is broadly similar to the EU taxonomy (even in order of priority) although slightly different wording is used however, soil management is specifically singled out in the Colombian taxonomy which is not the case in the EU taxonomy and comes before the circular economy and pollution prevention and control. <br> In the sectors and activities selected, the taxonomy must also comply with the assessment of DNSH to other environmental including adaptation objectives, as well as ensure compliance with the minimum safeguard requirements. <br> 6 principles will guide the SFC’s updates. <br> Principle 1 – align with high-level environmental goals and priorities for Colombia <br> Principle 2 – define eligibility criteria and compliance requirements for each asset and/or activity. <br> Principle 3 – include environmental laws, norms, regulations, plans and programs. <br> Principle 4 – reference, when necessary practices or standards from environmental certification systems. <br> Principle 5 - align economic activities with international standard industrial codes. <br> Principle 6 – study and analyse international taxonomies, including the EU taxonomy for interoperability.',
+                linkpolicyobjectives: 'Paris Agreement: Yes <br> Regional Framework: Yes (TBC) <br> National Strategies:',
+                sectorscovered: 'Sectors: Construction, Energy, Transport, Water supply and treatment, Waste management emissions capture, Manufacturing, Information and communication. <br> <br> Description: The Colombian taxonomy covers 7 sectors, 47 activities/assets (excluding the AFOLU sector) and 11 further activities that derive from three land use sectors which have environmental objectives other than climate change mitigation.  On this basis, the Colombian Green Taxonomy includes ten sectors with 58 activities.  The EU taxonomy covers nine economic sectors and 94 activities and assets. However, it is important to note that the three sectors of Forestry, Agriculture and Livestock are particularly important as they contribute to 59 % of the country’s GHG emissions. Differences also arise in the fact that the Colombian Green Taxonomy consolidates some activities in some areas.',
+                approachtoeligibility: 'principle-based: YES, Pass-list approach: YES, Threshold: and criteria: YES, Umbrella Clauses, Any combination of the above; <br> <br> Description: Both taxonomies also included enabling sectors that are necessary to achieve decarbonisation (e.g., activity of data-driven climate solutions under the ICT sector). Furthermore, both taxonomies address activities that have a viable transition pathway to achieve the taxonomy ambition over a defined period. These activities have a potential technological pathway for significantly improving their performance with an urgent transition to prevent and avoid negative damage, which is the case for activities in the manufacturing sector such as cement and aluminium manufacturing.',
+                basedonanothertaxonomy: 'The Colombian Green Taxonomy also evaluated other taxonomies and frameworks from the EU and Climate Bonds, and compared them with the national Measurement, Reporting, and Verification (MRV) system to identify the list of sectors and activities.',
+                Intendedtobeinteroperable: 'YES',
+                Purpose: 'Green: focus on identifying eligible - YES <br> Transition: supports transition of all existing assets - YES <br> Ineligible investments - YES',
+                Sectorclassification: 'Activities that make a substantial contribution define their eligibility based on TSC, which include qualitative or quantitative metrics and thresholds.',
+                DonosignificantharmDNHS: 'YES <br> <br> Furthermore, activities must comply with the DNSH requirements for other environmental objectives defined in the taxonomies. Generic DNSH requirements for all activities and specific requirements for certain activities exist (similar to the EU). When an activity does not have specific requirements then generic DNSH requirements must be followed.',
+                Socialobjectivessafeguards: 'The eligible asset must ensure that it does not generate a negative social impact. (social risks, working conditions…)',
+                Additionalguidance: 'The only official regulatory framework for the adoption of the Colombian Green Taxonomy is the SFC’s External Circular 005 of 20223 which provides instructions for adoption. It allows entities supervised by the SFC the option of using the taxonomy for various purposes, including identifying financing and investment opportunities for supporting the transition to a sustainable economy, measuring portfolio alignment with green assets and activities, structuring green products and solutions, and enhancing disclosure and transparency practices. The external circular includes three annexes specifying: the use of the taxonomy for investment portfolios, green bond issuers, and voluntary pension funds.',
+                otherusefuldocuments: '• CE 28, 2020 - Green Bonds <br> • CE 08, 2021 - ESG Integration for Voluntary Pension Funds <br> • CE 31, 2021 – ESG and Climate Disclosure Regulation for Issuers <br> • PCE 2022 - Sustainability Linked Bonds <br> <br> The following report provides a helpful comparison between the EU and Colombian Taxonomy provided by the Climate Bond Institute.',
+                MemberofIPFS: 'NO',
+                Biodiversity: '-',
+                country: 'Colombia'
+            },
+            {
+                latitude: 47.1625,
+                longitude: 19.5033,
+                name: 'Sustainable Finance Taxonomy',
+                link: 'https://ec.europa.eu/sustainable-finance-taxonomy/taxonomy-compass/the-compass',
+                yearinitiated: '2020, 2020 with some provisions effective from 1 Jan 2022',
+                mostrecentupdate: '2023 <br> <br> The EU Regulation on the establishment of a framework to facilitate sustainable investment (the Taxonomy Regulation) was published in the Official Journal of the EU (the OJ) on 22 June 2020. <br> <br>. As the legal instrument used is a Regulation, it became directly applicable in EU Member States and did not require further national implementation processes to be implemented (unlike a Directive). <br> <br> The European Commission adopted a phased approach to allow companies more time to comply with disclosure requirements. <br> <br> Some provision applied from 1 January 2022. These include provisions on: -	Climate Change Mitigation -	Climate Change Adaptation <br> <br> As such in the first year of application, nonfinancial undertakings only had to report the portion — in terms of turnover, CapEx and OpEx — of their eligible economic activities with regard to the Climate Delegated Act. <br> <br> For the 2022 reporting year, the obligation was extended to alignment: nonfinancial undertakings are now required to report the share of turnover, CapEx and OpEx related to taxonomy-eligible and taxonomy-aligned activities with regard to the Climate Delegated Act. This disclosure must include three tables for CapEx, OpEx and turnover, indicating the share of taxonomy-aligned activities, taxonomy-eligible but not aligned activities and non-taxonomy-eligible activities. In contrast financial undertakings were granted a two-year phase-in period for reporting, with alignment KPIs becoming mandatory in fiscal year 2023 — as financial undertakings will have to rely on data disclosed by their nonfinancial and financial counterparties to develop the indicators mandated by the Delegated Act. <br> <br> Additionally, from the reporting year 2022, credit institutions are required to disclose the proportion of their trading portfolio and on-demand interbank loans in their total assets. The insurers are to disclose the proportion of taxonomy-eligible and taxonomy-ineligible nonlife insurance and reinsurance economic activities. <br> <br> Further provisions came into effect on 1 January 2023: -	Sustainable use and protection of water and marine resources; -	Transition to a circular economy; -	Pollution prevention and control; -	Protection and restoration of biodiversity and ecosystems <br> <br> EU Regulations and Directives (known as Level 1, as described above regarding the Regulation) are often supplemented in more detail with what are and Level 2 measures that have a different legislative procedure to enable quicker amendment (Regulated Technical Standards/ Technical Screening Criteria (TSC) and Guidance. <br> <br> Following its publication, work started on the underlying Level 2 measures needed to supplement it. <br> <br> These relate to Key Performance Indicators - KPIs: Measures to specify the content, methodology and presentation of key performance indicators (KPIs) that non-financial undertakings and asset managers must disclose; and establishing TSCs to determine the conditions under which a given economic activity should be considered to be contributing substantially to an environmental objective. On 10 December 2021, the Commission Delegated Regulation (EU) 2021/2178 (the Disclosures Delegated Act) was published in the OJ. Its provisions took effect on 1 January 2022. The Disclosures Delegated Act was amended by the Complementary Delegated Act (EU) 2022/1214 (the CDA), which was published in the OJ on 15 July 2022 and which came into force on 1 January 2023. <br> <br> The CDA made amendments specifying disclosures to be made in respect of certain nuclear energy and fossil gas activities. <br> <br> Technical Screening Criteria (TSCs) <br> <br> (a) Climate Delegated Act On 9 December 2021, the Commission Delegated Regulation (EU) 2021/2139 (the Climate Delegated Act was published in the OJ). Its provisions took effect on 1 January 2022. <br> <br> The  Climate Delegated Act which came into force on 1 January 2023 was amended on 15 July 2022 through the Complementary Delegated Act (EU) 2022/1214 adding TSC by which certain nuclear energy and fossil gas activities which were classified as transitional activities which contribute to climate change mitigation under the Taxonomy Regulation. <br> <br> On 27 June 2023, the Commission published a draft Delegated Regulation, Annex I (Climate change mitigation) and Annex II (Climate change adaptation) to amend the Climate Delegated Act – these cover economic activities that make a substantial contribution to the environmental objectives of <br> (i)	climate change mitigation and <br> (ii)	climate change adaptation but which have not been previously included in the taxonomy (notably some manufacturing activities in relation to key components for low carbon transport and electrical equipment). <br> <br> Also on 27 June 2023, the Commission published a draft Taxonomy Environmental Delegated Act (adopted in the OJ following EP and Council review), which would establish Technical Screening Criteria (TSC) for activities that can make a substantial contribution to the environmental objectives for which TSCs are not already available. <br> <br> The purpose of this was to: <br> -	transition to a circular economy; -	control or protection and restoration of biodiversity; -	pollution prevention; and -	use and protection of water and marine resources. <br> <br> For further guidance on  TSC Notices the Commission sets out draft responses to FAQs on TSCs for the environmental objectives of climate change mitigation and climate change adaptation, contained in the Climate Delegated Act. <br> <br> The Environmental Delegated Act also had the effect of amending the Disclosures Delegated Act, to clarify the disclosure obligations for the additional activities and supplement the requirements in Article 10 of the Disclosures Delegated Act. Further targeted amendments to the Taxonomy Climate Delegated Act set out economic activities that make a substantial contribution to the environmental objectives of both climate change mitigation and climate change adaptation but which have not been previously included in the taxonomy. <br> <br> The Measures applied as of January 2024. <br> <br> Further Interpretation and Guidance provided is included. <br> <br> Areas of future work: Macel Haag European Commission Directorate-General for Financial Stability, Financial Services and Capital Markets Union Deputy Director has indicated that the key priority will be a simplified Taxonomy for SMEs. Other areas to watch will be the extension of biodiversity and further work on social taxonomy (December 2023 at CEPs think tank event on usability of the taxonomy see Utube video of the event). <br> <br> The current Taxonomy leaves a wide variety of economic activities non-classified. Some stakeholders may incorrectly interpret this non-classification or “not green” as a negative signal and there are fears that finance would simply disappear for activities that fall outside the current Taxonomy. To resolve this, An Extended Taxonomy could be designed to include intermediate as the current Regulation is not intended to define any category of activity other than “environmentally sustainable”; performing activities, significantly harmful activities and always significantly harmful activities.  The Commission would however need to identify further economic activities with no technological possibility of improving their environmental performance which was not in the scope of the existing taxonomy. The report published in March 2022 sets out how this could be done and the implications of this. Platform on Sustainable Finance’s report on environmental transition taxonomy (europa.eu). <br> <br> As noted by the report “Since the proposal of the Taxonomy Regulation (TR), it has become increasingly clear that many Taxonomy users could benefit from an extension of the Taxonomy framework to introduce other performance levels. Doing so would enhance transparency and would also allow for more nuanced decision-making and lend wider support to an environmental transition in the whole economy. The Taxonomy Regulation requires the European Commission to deliver a report on the possible extension of the Taxonomy to other economic activities. <br> <br> The report constitutes the Platform’s input to the European Commission’s forthcoming report under Article 26, and provides clear signals to and recommendations for financial markets and other stakeholders. <br> <br> The Platform has considered the premises, issues and options for and against extending the environmental Taxonomy ‘beyond green’ to classify a wider range of economic activities. We have consulted with a wide variety of potential Taxonomy users and published our interim report for public feedback. In addition to this work on an extended 6 environmental Taxonomy: focussing on the six environmental objectives and on transition across all sectors of the economy, the Platform has recently published its proposal for an EU Social Taxonomy, which is compatible and coherent with … this report.” The report however will be considered by the European Commission as it continues the way forward.',
+                mandatedinlaworvoluntary: 'Mandated <br> <br> See above for the technical details and links to the various legislative measures used and an explanation of what they do.',
+                developer: 'The European Commission. <br> <br> The Technical Expert Group (TEG) on sustainable finance: The TEG commenced its work in July 2018. Its 35 members from civil society, academia, business and the finance sector, as well as additional members and observers from EU and international public bodies work both through formal plenaries and subgroup meetings for each workstream. To allow it to conclude its technical work and retain the expertise before the future Platform on sustainable finance is set up, the mandate of the TEG was extended until 30 September 2020 following which it was replaced by the Platform on Sustainable Finance. <br> <br> The Platform on Sustainable Finance plays a key role in enabling such cooperation by bringing together the best expertise on sustainability from the corporate and public sector, from industry as well as academia, civil society and the financial industry. The Platform was first established in October 2020, for a two-year mandate that ended in October 2022. A call for applications for the selection of members for the new mandate of the Platform was launched in October 2022 and the new composition of the Platform was announced on 8 February 2023. The first meeting will be held on 7 March 2023. <br> <br> Member States expert group on sustainable finance (E03603): The European Commission adopted its “Action Plan on Financing Sustainable Growth” on 8 March 2018 which proposed concrete actions that will help achieve the Sustainable Development Goals and the objectives set in the Paris Agreement on Climate Change drawing on the recommendations of the High-Level Expert Group on Sustainable Finance. In its Action Plan, the European Commission has called on other players, such as EU Member States, to support implementing sustainable finance actions and promote the transformation in their territories. For this purpose, the European Commission is creating a dedicated EU Member States expert group on sustainable finance.',
+                objective: 'The EU recent Taxonomy Regulation aims to facilitate the transformation of the EU economy in alignment with its European Green Deal objectives, including the ambitious 2050 climate-neutrality goal by standardising the concept of environmentally sustainable investment across the EU. <br> <br> The Taxonomy outlines six key environmental objectives: <br> <br> 1.	Addressing climate change by mitigating its impact. <br> 2.	Adapting to the challenges posed by climate change. <br> 3.	Promoting sustainable management and protection of water and marine resources. <br> 4.	Encouraging the shift towards a circular economy. <br> 5.	Preventing and controlling pollution. <br> 6.	Safeguarding and rejuvenating biodiversity and ecosystems. <br> <br> The Taxonomy Regulation establishes a shared framework for defining what is considered "sustainable." This framework serves as the foundation for disclosure requirements and official labelling of financial products, as outlined in other Regulations and Directives. To provide some context, in December 2016, the European Commission formed a High-Level Expert Group on Sustainable Finance (HLEG) to guide the development of its sustainable finance roadmap. The HLEG recommendations formed the basis of the March 2018 Action Plan on Financing the Sustainable Growth. <br> <br> Creating an EU-wide classification system for green activities emerged as a top priority in both documents. In response, the Commission unveiled a comprehensive legislative package in May 2018, including the Taxonomy Regulation. Additionally, it established a Technical Expert Group on Sustainable Finance (TEG) composed of 35 members from civil society, academia, business, and the finance sectors. With extensive input from scientific experts and various stakeholder consultations, the TEG produced a Final Report in March 2020. This report contained recommendations regarding the overall design of the taxonomy, practical implementation guidelines, and a comprehensive technical annex with screening criteria. <br> <br> The EU Taxonomy, as recommended by the TEG Final Report, was incorporated into the Taxonomy Regulation 2020/852, adopted in June 2020. This regulation encompasses the six environmental objectives mentioned earlier. The delegated act concerning climate change mitigation (CCM) and adaptation (CCA), released in April 2021, also originated from the TEG work. Meanwhile, the screening criteria for the remaining environmental objectives are currently in development. <br> <br> Furthermore, the Taxonomy Regulation established an EU Platform on Sustainable Finance, tasked with assisting the Commission in further developing the EU Taxonomy and its broader sustainable finance policy. In summary, the EU Taxonomy relies on the NACE economic activity classification system, which exists but is not widely utilized in Europe. An economic activity is deemed "environmentally sustainable" if it meets specific conditions outlined in the Taxonomy Regulation.',
+                linkpolicyobjectives: 'Paris Agreement: Yes <br> <br> Regional Frameworks: Yes, principally <br> <br> National Strategies: ',
+                sectorscovered: 'Activities: 94 activities or assets <br> <br> Sectors: Construction, infrastructure and real estate, Consumer products, Credit institutions, Health, biotechnology and chemicals, Insurance undertakings, Manufacturing, Mining and quarrying, Mobility - vehicle manufacturing and transport, Oil and gas, Power and Utilities',
+                approachtoeligibility: 'Principle-based, Pass-list approach, Threshold and criteria, Umbrella Clauses, Any combination of the above',
+                basedonanothertaxonomy: 'No',
+                Intendedtobeinteroperable: 'No <br> <br> Nevertheless following the creation of the taxonomy the European Commission and the following founding members Argentina, Canada, Chile, China, India, Kenya and Morocco established the International Platform on Sustainable Finance on 18 October 2019 to encourage interoperability. <br> <br> Since then, Australia, Hong Kong Special Administrative Region of the People’s Republic of China (Hong Kong SAR of PRC), Indonesia, Japan, Malaysia, New Zealand, Norway, Senegal, Singapore, Sri Lanka, Switzerland and the United Kingdom also joined the IPSF. Together, the 20 members of the IPSF represent 58% of greenhouse gas emissions, 51% of the world population and 54% of global GDP.',
+                Purpose: 'Green: focus on identifying eligible <br> <br> transition: supports transition of all existing assets <br> <br> Enabling & Transitional Activities <br> <br> Within the activities that substantially contribute to one or more environmental objectives, the Taxonomy also defines two classification categories: enabling activities and transitional activities. These were added to allow activities which may not otherwise have been considered sustainable to contribute to the overall objective of promoting sustainability. <br> <br> Enabling activities allow other activities to make a substantial contribution to one or more of the Taxonomy’s six objectives. However, enabling activities cannot lead to a ‘lock-in’ of assets which would undermine long-term environmental goals. They must also have a substantial positive environmental impact over the activity’s lifecycle. <br> <br> Transitional activities must contribute to climate change mitigation and a pathway to keeping global warming in line with Paris Agreement commitments. Transitional activities only qualify where the following criteria are met: <br> <br> •	There are no technologically or economically feasible low-carbon alternatives; <br> •	Green House Gas emission levels correspond to the best performance in the sector    or industry; and <br> •	The activity does not lead to carbon lock-in or hamper the development and deployment of low-carbon alternatives. <br> <br> Ineligible investment: None',
+                Sectorclassification: '-',
+                DonosignificantharmDNHS: 'Technical Screening Criteria (TSC) <br> Define the specific requirements and thresholds for an activity to be considered as significantly contributing to a sustainability objective. These TSCs are being elaborated in secondary legislation called Delegated Acts (DAs). <br> <br> Do No Significant Harm’(DNSH) <br> For an activity pursuing one or more of the six objectives to qualify as sustainable it cannot cause significant harm to any of the other Taxonomy objectives. For each activity, the TSC lay out thresholds to define compliance with do no significant harm.',
+                Socialobjectivessafeguards: 'No, but currently in progress <br> <br> The EU work has progressed on this with a paper: Platform on Sustainable Finance’s report on social taxonomy (europa.eu). <br> Other useful information as it relates to extending the EU taxonomy on social issues includes: ESG integration and Social Taxonomy developments in the EU Sustainable Finance Framework',
+                Additionalguidance: 'YES <br> <br> For further guidance on  TSC Notices the Commission sets out draft responses to FAQs on TSCs for the environmental objectives of climate change mitigation and climate change adaptation, contained in the Climate Delegated Act <br> <br> Interpretation and Guidance provided: <br> <br> On 20 October 2023, the following Commission notices regarding interpretation and implementation of certain legal provisions under the Taxonomy Regulation were published in the Official Journal (OJ): <br> The Climate Delegated Act Notice sets out responses to FAQs “on the interpretation and implementation of certain legal provisions of the EU Taxonomy Climate Delegated Act establishing technical screening criteria for economic activities that contribute substantially to climate change mitigation or climate change adaptation and do no significant harm to other environmental objective”. <br> <br> The Disclosures Delegated Act Notice sets out responses to FAQs “on the interpretation and implementation of certain legal provisions of the Disclosures Delegated Act under Article 8 of EU Taxonomy Regulation on the reporting of Taxonomy-eligible and Taxonomy-aligned economic activities and assets”. <br> <br> On 15 June 2023, the Commission published a Notice (the Notice) as part of its ESG package) that deals with “the interpretation and implementation of certain legal provisions of the EU Taxonomy Regulation and links to the Sustainable Finance Disclosure Regulation.” The Notice considers the following questions and issues: <br> -	can Taxonomy-aligned investments qualify as ‘sustainable investment’ under the SFDR? <br> -	what is the role of minimum safeguards in the Taxonomy Regulation? <br> -	how are minimum safeguards defined under Article 18 of the Taxonomy Regulation? <br> -	key expectations for undertakings under Article 18 of the Taxonomy Regulation. <br> <br> In addition, there is further guidance provided in the following: <br> -	a Commission staff document, FAQ: What is the EU Taxonomy Article 8 delegated act and how will it work in practice?; <br> -	a Commission staff document, FAQs: How should financial and non-financial undertakings report Taxonomy-eligible economic activities and assets in accordance with the Disclosures Delegated Act (updated January 2022); and <br> -	a Commission Notice (published 6 October 2022) on the interpretation of certain legal provisions of the Disclosures Delegated Act on the reporting of Taxonomy-eligible economic activities. <br> <br> Finally, there is also the following the  Disclosures Notice  with FAQ on the Article 8 Disclosure which are set out in the Disclosures Delegated Act – it is likely that much of this disclosure notice will be impacted by the review of SFDR (currently underway) so this notice may decline in its relevance. Please also see EU Taxonomy Navigator (europa.eu)',
+                otherusefuldocuments: 'EU Taxonomy Navigator (europa.eu) <br> <br> The EU taxonomy navigator offers four tools that will help you navigate the EU taxonomy: <br> 1.	EU taxonomy compass: a visual representation of sectors, activities and criteria included in the EU Taxonomy delegated acts <br> 2.	EU taxonomy calculator: a step-by-step guide on reporting obligations <br> 3.	FAQs repository: an overview of questions and answers on the EU taxonomy and its delegated acts <br> 4.	EU taxonomy user guide: a guidance document on the Taxonomy for non-experts <br> <br> OTHER <br> Future work on improving the usability of the taxonomy: A report by the Platform on Sustainable Finance recommendations on data and usability of the EU taxonomy (europa.eu)',
+                MemberofIPFS: 'Yes <br> <br> The European Union was among the founding members.  They are comparing efforts with the CBI with a view to enhance interoperability, convergence is considered too challenging at present',
+                Biodiversity: 'The SFPS 2023 Annual Report notes (bold added): <br> “The EU has taken further steps to address the dual challenges of climate and biodiversity crises. The EU employs a two-pronged approach that combines investment in nature and essential reforms to create the right social and economic context. A cornerstone of this commitment is the EU’s long-term strategy, which strives to restore biodiversity by 2030 and includes the proposal of the EU’s Nature Restoration Law, establishing binding restoration targets for specific habitats and species. Key to advancing these objectives is the EU’s robust framework for sustainable finance, built around the EU Taxonomy, which is gaining increasing importance in the context of biodiversity preservation. In June 2023, the European Commission extended the EU Taxonomy with the Environmental Delegated Act, showcasing the EU’s dedication to embedding biodiversity conservation and restoration criteria into the financial sector. This expansion has led to the introduction of a new set of criteria within the EU Taxonomy, targeting economic activities that make substantial contributions to non-climate environmental objectives. These criteria include provisions for the protection and restoration of biodiversity and ecosystems. Technical screening criteria have been developed to define activities, such as habitat, ecosystem, and species conservation and restoration, as well as those related to accommodations like hotels, holiday resorts, camping grounds, and similar facilities. Expected to come into force as of January 2024, the Delegated Acts reflect the EU’s commitment to addressing the urgent issue of biodiversity preservation. To reinforce sustainability reporting, the EU has introduced the ESRS, with a significant emphasis on biodiversity within these standards. Biodiversity considerations are integrated into general disclosure standards and a dedicated standard, ESRS 4, entirely focused on biodiversity and ecosystems. ESRS 4 necessitates that companies transparently disclose material impacts, risks, and opportunities tied to biodiversity, clarifying their relevance to strategy and business models. <br> <br> Moreover, companies are required to report the processes employed for identifying and assessing material biodiversity and ecosystem-related aspects, along with details of targets, impact metrics, and potential financial implications. <br> <br> Complementing these initiatives, the European Commission has embarked on a proactive approach to address financial risks associated with biodiversity loss. A methodological framework and assessment of potential financial risks linked to biodiversity and ecosystem degradation are currently under development. This endeavour aims to guide financial market participants in assessing the financial risks of biodiversity loss and is set to be published in the first quarter of 2024.  Source IPSF Annual Report 2023 P33.',
+                country: 'EU'
+            },
+            {
+                latitude: -6.2088,
+                longitude: 106.8456,
+                name: 'ASEAN Taxonomy version 1',
+                link: 'https://asean.org/wp-content/uploads/2021/11/ASEAN-Taxonomy.pdf',
+                yearinitiated: '2010',
+                mostrecentupdate: 'This document provides a frame for discussions with official sector and private sector stakeholders to work together on the development of the ASEAN Taxonomy. The ASEAN Taxonomy serves as a reference point to guide capital and funding towards activities that can help promote the systemic transformation needed for the region.',
+                mandatedinlaworvoluntary: '...',
+                developer: 'ASEAN Capital Markets Forum (ACMF), the ASEAN Insurance Regulators Meeting (AIRM), the ASEAN Senior Level Committee on Financial Integration (SLC), and the ASEAN Working Committee on Capital Market Development (WC-CMD)',
+                objective: '...',
+                linkpolicyobjectives: '...',
+                sectorscovered: '...',
+                approachtoeligibility: '...',
+                basedonanothertaxonomy: '...',
+                Intendedtobeinteroperable: '...',
+                Purpose: '...',
+                Sectorclassification: 'Corporations, Financial Service providers, Investment Managers, Asset Owners (Other), Asset Owners (Insurance companies), Asset Owners (Corporate pension or equivalent plans), Asset Owners (non-corporate Pension Funds or equivalent), Voluntary, Taxonomy.',
+                DonosignificantharmDNHS: '...',
+                Socialobjectivessafeguards: '...',
+                Additionalguidance: '...',
+                otherusefuldocuments: '...',
+                MemberofIPFS: '...',
+                Biodiversity: '...',
+                country: 'ASEAN'
+            },
+            {
+                latitude: 23.685,
+                longitude: 90.3563,
+                name: 'Sustainable Finance Policy for Banks and Financial Institutions',
+                link: 'http://documents1.worldbank.org/curated/en/953011593410423487/pdf/Developing-a-National-Green-Taxonomy-A-World-Bank-Guide.pdf ; https://www.bb.org.bd/mediaroom/circulars/gbcrd/dec312020sfd05.pdf',
+                yearinitiated: '2017',
+                mostrecentupdate: '2020 <br> <br> The policy includes Sustainable Finance Taxonomy along with a country perspective Green Taxonomy. The Green Finance and the Sustainable Linked Finance taxonomies together comprise the Sustainable Finance Taxonomy. Comprehensive lists of green products/projects/initiatives and identical areas of sustainable linked finance have been included in the policy. This policy provides clarity and guidance to identify green and Sustainable Linked Finance.',
+                mandatedinlaworvoluntary: '...',
+                developer: 'Bandladesh Bank (BB)',
+                objective: '...',
+                linkpolicyobjectives: '...',
+                sectorscovered: '...',
+                approachtoeligibility: '...',
+                basedonanothertaxonomy: '...',
+                Intendedtobeinteroperable: '...',
+                Purpose: '...',
+                Sectorclassification: 'Financial Service providers, Investment Managers, Asset Owners (Other), Asset Owners (Insurance companies), Asset Owners (Corporate pension or equivalent plans), Asset Owners (non-corporate Pension Funds or equivalent), Voluntary, Taxonomy.',
+                DonosignificantharmDNHS: '...',
+                Socialobjectivessafeguards: '...',
+                Additionalguidance: '...',
+                otherusefuldocuments: '...',
+                MemberofIPFS: '...',
+                Biodiversity: '...',
+                country: 'Bangladesh'
+            },
+            {
+                latitude: 35.8617,
+                longitude: 104.1954,
+                name: 'Green Bond Endorsed-Projects Catalogue and Green Industry Guidance Catalogue',
+                link: 'http://www.pbc.gov.cn/goutongjiaoliu/113456/113469/4236341/index.html and https://www.ndrc.gov.cn/fggz/hjyzy/stwmjs/201903/t20190305_1220625.html',
+                yearinitiated: '2015 and 2019',
+                mostrecentupdate: '2018 and - <br> <br> This revised catalogue unifies domestic standards on green bonds and green projects. Aiming to be more aligned with international standards and Chinas carbon neutrality goal, it removes clean use of coal and other fossil energy sources and adopts a do no significant harm principle. <br> <br> Green Industry Guidance Catalogue: The guidance is meant to enact policies to strengthen green industry development, and combine catalogue with investment, pricing, and financial policies to improve catalogue practicality. It covers 6 main industrial sectors: energy conservation and environmental protection, clean production, clean energy, ecological environment, green upgrade of infrastructure and green service. Clean coal is still in this version.',
+                mandatedinlaworvoluntary: '...',
+                developer: 'Peoples Bank of China, National Development and Reform Commission, and the China Securities Regulatory Commission <br> <br> National Development and Reform Commission, Ministry of Industry and Information Technology, Ministry of Natural Resources, Ministry of Ecology and Environment, Ministry of Housing and Urban-Rural Development, Peoples Bank of China, National Energy Administration.',
+                objective: '...',
+                linkpolicyobjectives: '...',
+                sectorscovered: '...',
+                approachtoeligibility: '...',
+                basedonanothertaxonomy: '...',
+                Intendedtobeinteroperable: '...',
+                Purpose: '...',
+                Sectorclassification: 'Others (Exchanges etc.), Corporations, Mandatory (including comply or explain), Taxonomy <br> <br> Corporations, Asset Owners (Insurance companies), Asset Owners (Corporate pension or equivalent plans), Asset Owners (non-corporate Pension Funds or equivalent), Mandatory (including comply or explain), Taxonomy.',
+                DonosignificantharmDNHS: '...',
+                Socialobjectivessafeguards: '...',
+                Additionalguidance: '...',
+                otherusefuldocuments: '...',
+                MemberofIPFS: '...',
+                Biodiversity: '...',
+                country: 'China'
+            },
+            {
+                latitude: 0,
+                longitude: -30,
+                name: 'Common Ground Taxonomy - Instruction report',
+                link: 'https://ec.europa.eu/info/files/international-platform-sustainable-finance-common-ground-taxonomy-report-2021_en',
+                yearinitiated: '2021',
+                mostrecentupdate: '- <br> <br> This report is an in-depth comparison and mapping exercise between the EU and Chinas taxonomies. It aims to provide more clarity and transparency about the commonalities and differences between approaches and potentially contribute to the analysis to lower the transboundary cost of sustainable investments and scale up the mobilization of sustainable capital internationally. It also provides a solid methodology on the basis of which other taxonomies can be compared in the future. The IPSF states that, amongst others, it may inform financial institutions in aligning their activities with low carbon economy objectives.',
+                mandatedinlaworvoluntary: '...',
+                developer: 'International Platform on Sustainable Finance (IPSF)',
+                objective: '...',
+                linkpolicyobjectives: '...',
+                sectorscovered: '...',
+                approachtoeligibility: '...',
+                basedonanothertaxonomy: '...',
+                Intendedtobeinteroperable: '...',
+                Purpose: '...',
+                Sectorclassification: 'Others (Exchanges etc.), Corporations, Financial Service providers, Investment Managers, Asset Owners (Other), Asset Owners (Insurance companies), Asset Owners (Corporate pension or equivalent plans), Asset Owners (non-corporate Pension Funds or equivalent), Voluntary, Taxonomy.',
+                DonosignificantharmDNHS: '...',
+                Socialobjectivessafeguards: '...',
+                Additionalguidance: '...',
+                otherusefuldocuments: '...',
+                MemberofIPFS: '...',
+                Biodiversity: '...',
+                country: 'Global'
+            },
+            {
+                latitude: 48.0196,
+                longitude: 66.9237,
+                name: 'Concept on introduction and development of green finance instruments and principles',
+                link: 'https://gfc.aifc.kz/uploads/Concept%20on%20introduction%20and%20development%20of%20green%20finance%20instruments%20and%20principles.pdf',
+                yearinitiated: '2017',
+                mostrecentupdate: 'This roadmap sets out sustainable finance ambitions - including the development of a national taxonomy.',
+                mandatedinlaworvoluntary: '...',
+                developer: 'AIFC Green Finance Centre',
+                objective: '...',
+                linkpolicyobjectives: '...',
+                sectorscovered: '...',
+                approachtoeligibility: '...',
+                basedonanothertaxonomy: '...',
+                Intendedtobeinteroperable: '...',
+                Purpose: '...',
+                Sectorclassification: 'Corporations, Financial Service providers, Investment Managers, Asset Owners (Other), Asset Owners (Insurance companies), Asset Owners (Corporate pension or equivalent plans), Asset Owners (non-corporate Pension Funds or equivalent), Voluntary, National Sustainable Finance Strategy, Taxonomy.',
+                DonosignificantharmDNHS: '...',
+                Socialobjectivessafeguards: '...',
+                Additionalguidance: '...',
+                otherusefuldocuments: '...',
+                MemberofIPFS: '...',
+                Biodiversity: '...',
+                country: 'Kazakhstan'
+            },
+            {
+                latitude: 4.2105,
+                longitude: 101.9758,
+                name: 'Climate Change and Principle-based Taxonomy',
+                link: 'https://www.bnm.gov.my/documents/20124/938039/Climate+Change+and+Principle-based+Taxonomy.pdf',
+                yearinitiated: '2021',
+                mostrecentupdate: 'The Taxonomy sets out five Guiding Principles (GPs) intended to help financial institutions (FIs) assess and categorize economic activities according to the extent to which they meet climate objectives and promote the transition to a low-carbon economy.',
+                mandatedinlaworvoluntary: '...',
+                developer: 'Bank Negara Malaysia (Central Bank of Malaysia)',
+                objective: '...',
+                linkpolicyobjectives: '...',
+                sectorscovered: '...',
+                approachtoeligibility: '...',
+                basedonanothertaxonomy: '...',
+                Intendedtobeinteroperable: '...',
+                Purpose: '...',
+                Sectorclassification: 'Corporations, Financial Service providers, Investment Managers, Asset Owners (Other), Asset Owners (Insurance companies), Asset Owners (Corporate pension or equivalent plans), Asset Owners (non-corporate Pension Funds or equivalent), Voluntary, Taxonomy.',
+                DonosignificantharmDNHS: '...',
+                Socialobjectivessafeguards: '...',
+                Additionalguidance: '...',
+                otherusefuldocuments: '...',
+                MemberofIPFS: '...',
+                Biodiversity: '...',
+                country: 'Malaysia'
+            },
+            {
+                latitude: 46.8625,
+                longitude: 103.8467,
+                name: 'Mongolia Green Taxonomy',
+                link: 'https://www.greenfinanceplatform.org/policies-and-regulations/mongolia-green-taxonomy',
+                yearinitiated: '2019',
+                mostrecentupdate: 'The Mongolian green taxonomy aims to “develop a nationally agreed classification framework of activities that contribute to climate change mitigation, adaptation, pollution prevention, resource conservation, and livelihood improvement in the context of green finance”. It is designed to be applied to a wide range of financial instruments including corporate lending, consumer lending, project finance, SME finance, green bonds, equity investment, insurance, credit guarantee, grants, financial advisory and technical assistance, among others. The activities identified in this version of the taxonomy will be reviewed every 3-5 years following policy shifts, scientific developments, technological changes, and new industry needs in the green finance space. It is based on 6 principles: Contribute to national policies and targets; Address environmental challenges; Cover high-emitting, key economic sectors; Align with international standards and good practices; Comply with ESG standards; Continues review and development.',
+                mandatedinlaworvoluntary: '...',
+                developer: 'Financial Stability Commission of Mongolia',
+                objective: '...',
+                linkpolicyobjectives: '...',
+                sectorscovered: '...',
+                approachtoeligibility: '...',
+                basedonanothertaxonomy: '...',
+                Intendedtobeinteroperable: '...',
+                Purpose: '...',
+                Sectorclassification: 'Corporations, Financial Service providers, Investment Managers, Asset Owners (Other), Asset Owners (Insurance companies), Asset Owners (Corporate pension or equivalent plans), Asset Owners (non-corporate Pension Funds or equivalent), Voluntary, Taxonomy.',
+                DonosignificantharmDNHS: '...',
+                Socialobjectivessafeguards: '...',
+                Additionalguidance: '...',
+                otherusefuldocuments: '...',
+                MemberofIPFS: '...',
+                Biodiversity: '...',
+                country: 'Mongolia'
+            },
+            {
+                latitude: 61.524,
+                longitude: 105.3188,
+                name: 'Green Taxonomy',
+                link: 'http://publication.pravo.gov.ru/Document/View/0001202109240043',
+                yearinitiated: '2021',
+                mostrecentupdate: 'The Taxonomy was developed with the ambition of compatibility with international best practice. It covers waste management, energy, construction, industry, transport, water supply, biodiversity, and agriculture. The energy criteria follow the 100g CO2e/kWh threshold, based on the recommendations of the Technical Expert Group (EU TEG) on sustainable finance for the EU Taxonomy of sustainable activities. It includes adaptation criteria and provides an opportunity to develop transition criteria in the future. However, it does not include do no significant harm criteria.',
+                mandatedinlaworvoluntary: '...',
+                developer: 'Vnesheconombank (VEB)',
+                objective: '...',
+                linkpolicyobjectives: '...',
+                sectorscovered: '...',
+                approachtoeligibility: '...',
+                basedonanothertaxonomy: '...',
+                Intendedtobeinteroperable: '...',
+                Purpose: '...',
+                Sectorclassification: 'Others (Exchanges etc.), Corporations, Financial Service providers, Investment Managers, Asset Owners (Other), Asset Owners (Insurance companies), Asset Owners (Corporate pension or equivalent plans), Asset Owners (non-corporate Pension Funds or equivalent), Voluntary, Taxonomy.',
+                DonosignificantharmDNHS: '...',
+                Socialobjectivessafeguards: '...',
+                Additionalguidance: '...',
+                otherusefuldocuments: '...',
+                MemberofIPFS: '...',
+                Biodiversity: '...',
+                country: 'Russia'
+            },
+            {
+                latitude: 1.3521,
+                longitude: 103.8198,
+                name: 'Green and transition taxonomy',
+                link: 'https://abs.org.sg/industry-guidelines/gfit-taxonomy-public-consultation',
+                yearinitiated: '2021',
+                mostrecentupdate: '2022 <br> <br> This draft initiative is one of four allocated to the Green Finance Industry Taskforce (GFIT), convened by the Monetary Authority of Singapore to accelerate the development of green finance: (i) develop a taxonomy (ii) enhance environmental risk management practices of financial institutions (iii) improve disclosures, and (iv) foster green finance solutions. Under the first focus area, the GFIT is exploring the development of a taxonomy for Singapore-based financial institutions, with particular relevance to those active across ASEAN. The GFIT held a consultation on their initial thinking around the potential development of a taxonomy which closed in March 2021. A second consultation paper was released on 12 May 2022, building on the broad support for the development of the Taxonomy reflected in the feedback received for the first consultation document, as well as key developments in the sustainability space. The second paper expands on the traffic light approach, and adds granularity to the application and thresholds for classification, supported by science and data.',
+                mandatedinlaworvoluntary: '...',
+                developer: 'Green Finance Industry Taskforce (GFIT)',
+                objective: '...',
+                linkpolicyobjectives: '...',
+                sectorscovered: '...',
+                approachtoeligibility: '...',
+                basedonanothertaxonomy: '...',
+                Intendedtobeinteroperable: '...',
+                Purpose: '...',
+                Sectorclassification: 'Corporations, Financial Service providers, Investment Managers, Asset Owners (Other), Asset Owners (Insurance companies), Asset Owners (Corporate pension or equivalent plans), Asset Owners (non-corporate Pension Funds or equivalent), Voluntary, Taxonomy.',
+                DonosignificantharmDNHS: '...',
+                Socialobjectivessafeguards: '...',
+                Additionalguidance: '...',
+                otherusefuldocuments: '...',
+                MemberofIPFS: '...',
+                Biodiversity: '...',
+                country: 'Singapore'
+            },
+            {
+                latitude: -30.5595,
+                longitude: 22.9375,
+                name: 'South African Green Finance Taxonomy',
+                link: 'https://sustainablefinanceinitiative.org.za/taxonomy/',
+                yearinitiated: '2022',
+                mostrecentupdate: 'This first edition of the South African Green Finance Taxonomy aims to have a range of benefits. Amongst other things, it will (i) Help the financial sector with clarity and certainty in selecting green investments in line with international best practice and South Africas national policies and priorities. (ii) Reduce financial sector risks through enhanced management of environmental and social performance. (iii) Reduce the costs associated with labelling and issuing green financial instrument. (iv) Unlock significant investment opportunities for South Africa in a broad range of green and climate-friendly assets. (v) Support regulatory and supervision oversight of the financial sector. (vi) Provide a basis for regulators to align or reference green financial products.',
+                mandatedinlaworvoluntary: '...',
+                developer: 'National Treasury of the republic of South Africa with the IFC, Carbon Trust and NBI',
+                objective: '...',
+                linkpolicyobjectives: '...',
+                sectorscovered: '...',
+                approachtoeligibility: '...',
+                basedonanothertaxonomy: '...',
+                Intendedtobeinteroperable: '...',
+                Purpose: '...',
+                Sectorclassification: 'Credit Rating Agencies, Corporations, Investment Managers, Asset Owners (Other), Asset Owners (Insurance companies), Asset Owners (Corporate pension or equivalent plans), Asset Owners (non-corporate Pension Funds or equivalent), Mandatory (including comply or explain), Taxonomy, Investor ESG disclosure, Corporate ESG disclosure.',
+                DonosignificantharmDNHS: '...',
+                Socialobjectivessafeguards: '...',
+                Additionalguidance: '...',
+                otherusefuldocuments: '...',
+                MemberofIPFS: '...',
+                Biodiversity: '...',
+                country: 'South Africa'
+            },
+            // Add more taxonomies here
+        ];
+
+        function featureToGeoJSON(taxonomy) {
+            return {
+                'type': 'Feature',
+                'properties': {
+                    'name': taxonomy.name,
+                    'link': taxonomy.link
+                },
+                'geometry': {
+                    'type': 'Point',
+                    'coordinates': [taxonomy.longitude, taxonomy.latitude]
+                }
+            };
+        }
+        // ... (other code)
+
+        const popup = new mapboxgl.Popup({
+            closeButton: false,
+            closeOnClick: true,
+            className: 'custom-popup' // Add this classf
+        });
+
+        map.on('click', 'taxonomy-markers', (e) => {
+            const taxonomyName = e.features[0].properties.name;
+            const taxonomy = esgTaxonomies.find(item => item.name === taxonomyName);
+            if (taxonomy) {
+                const popupContent = document.createElement('div');
+                popupContent.innerHTML = `
             <div class="popup-flex-container">
                 <input type="text" onkeyup="filterPopupContent(this)" placeholder="Search...">
                 <div class="popup-content-details">
@@ -813,69 +1075,86 @@ map.on('click', 'taxonomy-markers', (e) => {
             </div>
         `;
 
-        popup.setLngLat(e.lngLat)
-            .setDOMContent(popupContent)
-            .addTo(map);
-        e.preventDefault();
+                // Create the popup without focus on the input field
+                popup.setLngLat(e.lngLat)
+                    .setDOMContent(popupContent)
+                    .addTo(map);
+                e.preventDefault();
 
-        setTimeout(() => {
-            popupContent.scrollTop = 0;
-        }, 100);
+                // Use setTimeout to defer the operation until after the popup is shown
+                setTimeout(() => {
+                    const inputElement = popupContent.querySelector('input[type="text"]');
+                    if (inputElement) {
+                        inputElement.blur(); // Remove focus from the input element
+                    }
+                }, 10);
 
-        document.querySelectorAll('.collapsible-header').forEach(header => {
-            header.addEventListener('click', function() {
-                this.nextElementSibling.style.display = 
-                    this.nextElementSibling.style.display === 'block' ? 'none' : 'block';
-                this.querySelector('.collapsible-arrow').textContent = 
-                    this.nextElementSibling.style.display === 'block' ? '►' : '▼';
-            });
-        });
-    }
-});
+                popup.setLngLat(e.lngLat)
+                    .setDOMContent(popupContent)
+                    .addTo(map);
+                e.preventDefault();
 
+                setTimeout(() => {
+                    popupContent.scrollTop = 0;
+                }, 100);
 
-map.on('load', () => {
-    map.addSource('esgTaxonomies', {
-        'type': 'geojson',
-        'data': {
-            'type': 'FeatureCollection',
-            'features': esgTaxonomies.map(taxonomy => featureToGeoJSON(taxonomy))
-        }
-    });
-    map.addLayer({
-        'id': 'taxonomy-markers',
-        'type': 'circle',
-        'source': 'esgTaxonomies',
-        'paint': {
-            'circle-color': 'green',
-            'circle-radius': 10,
-            'circle-stroke-width': 2,
-            'circle-stroke-color': 'white'
-        }
-    });
-    
-    // Only keep one definition of filterPopupContent function
-    function filterPopupContent(inputElement) {
-        const searchValue = inputElement.value.toLowerCase();
-        const contentDiv = inputElement.nextElementSibling;
-        const textElements = contentDiv.querySelectorAll('.popup-text');
-        textElements.forEach(element => {
-            if (searchValue) {
-                element.innerHTML = highlightText(element.textContent, searchValue);
-            } else {
-                element.innerHTML = element.textContent;
+                document.querySelectorAll('.collapsible-header').forEach(header => {
+                    header.addEventListener('click', function () {
+                        this.nextElementSibling.style.display =
+                            this.nextElementSibling.style.display === 'block' ? 'none' : 'block';
+                        this.querySelector('.collapsible-arrow').textContent =
+                            this.nextElementSibling.style.display === 'block' ? '►' : '▼';
+                    });
+                });
             }
         });
-    }
-    
-    map.on('movestart', () => {
-        map.setFilter('taxonomy-markers', ['has', 'name', false]);
-    });
-    map.on('moveend', () => {
-        const features = map.queryRenderedFeatures({ layers: ['taxonomy-markers'] });
-        if (features) {
-            renderListings(features);
-        }
-    });
-});
-</script>
+
+
+        map.on('load', () => {
+            map.addSource('esgTaxonomies', {
+                'type': 'geojson',
+                'data': {
+                    'type': 'FeatureCollection',
+                    'features': esgTaxonomies.map(taxonomy => featureToGeoJSON(taxonomy))
+                }
+            });
+            map.addLayer({
+                'id': 'taxonomy-markers',
+                'type': 'circle',
+                'source': 'esgTaxonomies',
+                'paint': {
+                    'circle-color': 'green',
+                    'circle-radius': 10,
+                    'circle-stroke-width': 2,
+                    'circle-stroke-color': 'white'
+                }
+            });
+
+            // Only keep one definition of filterPopupContent function
+            function filterPopupContent(inputElement) {
+                const searchValue = inputElement.value.toLowerCase();
+                const contentDiv = inputElement.nextElementSibling;
+                const textElements = contentDiv.querySelectorAll('.popup-text');
+                textElements.forEach(element => {
+                    if (searchValue) {
+                        element.innerHTML = highlightText(element.textContent, searchValue);
+                    } else {
+                        element.innerHTML = element.textContent;
+                    }
+                });
+            }
+
+            map.on('movestart', () => {
+                map.setFilter('taxonomy-markers', ['has', 'name', false]);
+            });
+            map.on('moveend', () => {
+                const features = map.queryRenderedFeatures({ layers: ['taxonomy-markers'] });
+                if (features) {
+                    renderListings(features);
+                }
+            });
+
+
+
+        });
+    </script>
